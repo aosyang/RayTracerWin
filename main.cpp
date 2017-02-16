@@ -75,9 +75,9 @@ enum ShapeType
 
 enum MaterialType
 {
-	MT_Emissive,
-	MT_Diffuse,
-	MT_Reflective,
+	MT_Emissive		= 1 << 0,
+	MT_Diffuse		= 1 << 1,
+	MT_Reflective	= 1 << 2,
 };
 
 struct Shape
@@ -87,16 +87,16 @@ struct Shape
 	RVec3 r;
 	RVec3 color;
 	bool pattern;
-	MaterialType matType;
+	int matType;
 };
 
 Shape shapes[] =
 {
-	{ ST_Sphere, RVec3(0.0f, -1.0f, 2.0f) ,   RVec3(1.0f, 0.0f, 0.0f), RVec3(1.0f, 0.5f, 0.0f), false, MT_Reflective },
-	{ ST_Sphere, RVec3(1.5f, 0.0f, 2.0f) ,    RVec3(0.5f, 0.0f, 0.0f), RVec3(0.0f, 10.0f, 10.0f), false, MT_Emissive/*MT_Reflective*/ },
-	{ ST_Sphere, RVec3(1.2f, 1.0f, 3.0f) ,    RVec3(0.5f, 0.0f, 0.0f), RVec3(0.0f, 1.0f, 0.0f), false, MT_Diffuse },
-	{ ST_Sphere, RVec3(0.2f, 1.2f, 2.0f) ,    RVec3(0.5f, 0.0f, 0.0f), RVec3(0.5f, 0.0f, 0.0f), false, MT_Reflective },
-	{ ST_Sphere, RVec3(-2.8f, 1.2f, 4.0f) ,   RVec3(1.5f, 0.0f, 0.0f), RVec3(0.95f, 0.75f, 0.0f), false, MT_Reflective/*MT_Reflective*/ },
+	{ ST_Sphere, RVec3(0.0f, -1.0f, 2.0f) ,   RVec3(1.0f, 0.0f, 0.0f), RVec3(1.0f, 0.5f, 0.1f), false, MT_Diffuse | MT_Reflective },
+	//{ ST_Sphere, RVec3(1.5f, 0.0f, 2.0f) ,    RVec3(0.5f, 0.0f, 0.0f), RVec3(0.0f, 10.0f, 10.0f), false, MT_Emissive/*MT_Reflective*/ },
+	{ ST_Sphere, RVec3(1.2f, 1.0f, 3.0f) ,    RVec3(0.5f, 0.0f, 0.0f), RVec3(0.1f, 1.0f, 0.2f), false, MT_Diffuse },
+	{ ST_Sphere, RVec3(0.2f, 1.2f, 2.0f) ,    RVec3(0.5f, 0.0f, 0.0f), RVec3(0.5f, 0.0f, 0.2f), false, MT_Diffuse | MT_Reflective },
+	{ ST_Sphere, RVec3(-2.8f, 1.2f, 4.0f) ,   RVec3(1.5f, 0.0f, 0.0f), RVec3(0.95f, 0.75f, 0.1f), false, MT_Diffuse | MT_Reflective/*MT_Reflective*/ },
 	{ ST_Sphere, RVec3(0.0f, -5.0f, 0.0f) ,    RVec3(0.5f, 0.0f, 0.0f), RVec3(50.0f, 50.0f, 60.0f), false, MT_Emissive/*MT_Reflective*/ },
 	//{ ST_Sphere, RVec3(0.0f, 0.0f, -1005.0f) , RVec3(1000.0f, 0.0f, 0.0f), RVec3(0.0f, 0.5f, 0.75f), MT_Emissive },
 	//{ ST_Sphere, RVec3(1055.0f, 0.0f, 0.0f) , RVec3(1000.0f, 0.0f, 0.0f), 0xFF007FBF, MT_Emissive },
@@ -162,7 +162,9 @@ RVec3 RayTrace(const RRay& ray, int refl_count = 0)
 
 	if (hitShape)
 	{
-		if (hitShape->matType == MT_Reflective)
+		float diff_ratio = 1.0f;
+
+		if (hitShape->matType & MT_Reflective)
 		{
 			float dist = ray.Distance - result.dist;
 			if (dist > 0)
@@ -173,54 +175,53 @@ RVec3 RayTrace(const RRay& ray, int refl_count = 0)
 
 					RRay reflRay(result.hitPoint + newDir * 0.001f, newDir, dist);
 
-					const float refl_ratio = 0.8f;
-					c = RayTrace(reflRay, refl_count + 1) * refl_ratio + hitShape->color * (1.0f - refl_ratio);
+					const float refl_ratio = 0.5f;
+					diff_ratio = 1.0f - refl_ratio;
+					c += RayTrace(reflRay, refl_count + 1) * refl_ratio;
 				}
 			}
 		}
-		else
+
+		RVec3 surface_color = hitShape->color;
+
+		// Make checkerboard pattern
+		if (hitShape->pattern)
 		{
-			RVec3 surface_color = hitShape->color;
+			bool color = false;
+			float fx = result.hitPoint.x * 0.2f;
+			float fy = result.hitPoint.y * 0.2f;
+			float fz = result.hitPoint.z * 0.2f;
 
-			// Make checkerboard pattern
-			if (hitShape->pattern)
+			if (fx - floorf(fx) > 0.5f)
+				color = !color;
+			if (fz - floorf(fz) > 0.5f)
+				color = !color;
+			if (fy - floorf(fy) > 0.5f)
+				color = !color;
+
+			if (!color)
+				surface_color /= 2.0f;
+		}
+
+		if (hitShape->matType & MT_Diffuse)
+		{
+			float dist = ray.Distance - result.dist;
+			if (dist > 0)
 			{
-				bool color = false;
-				float fx = result.hitPoint.x * 0.2f;
-				float fy = result.hitPoint.y * 0.2f;
-				float fz = result.hitPoint.z * 0.2f;
+				RVec3 newDir = RandomHemisphereDir(result.hitNormal);
+				RRay diff_ray(result.hitPoint + newDir * 0.001f, newDir, dist);
 
-				if (fx - floorf(fx) > 0.5f)
-					color = !color;
-				if (fz - floorf(fz) > 0.5f)
-					color = !color;
-				if (fy - floorf(fy) > 0.5f)
-					color = !color;
+				float dp = max(0.0f, result.hitNormal.Dot(newDir));
 
-				if (!color)
-					surface_color /= 2.0f;
-			}
-
-			if (hitShape->matType == MT_Diffuse)
-			{
-				float dist = ray.Distance - result.dist;
-				if (dist > 0)
-				{
-					RVec3 newDir = RandomHemisphereDir(result.hitNormal);
-					RRay diff_ray(result.hitPoint + newDir * 0.001f, newDir, dist);
-
-					float dp = max(0.0f, result.hitNormal.Dot(newDir));
-
-					RVec3 diff_refl = RayTrace(diff_ray, refl_count + 1);
-					c = surface_color * diff_refl * dp;
-				}
-			}
-			else  // MT_Emissive
-			{
-				c = surface_color;
+				RVec3 diff_refl = RayTrace(diff_ray, refl_count + 1);
+				c += surface_color * diff_refl * dp * diff_ratio;
 			}
 		}
 
+		if (hitShape->matType & MT_Emissive)
+		{
+			c += surface_color;
+		}
 	}
 
 	return c;
@@ -245,8 +246,8 @@ void ThreadRender(int begin, int end)
 	{
 		int x, y;
 		BufferIndexToCoord(i, x, y);
-		float dx = (float)(x - 400) / (bitmapWidth * 2);
-		float dy = (float)(y - 400) / (bitmapHeight * 2);
+		float dx = (float)(x - bitmapWidth / 2) / (bitmapWidth * 2);
+		float dy = (float)(y - bitmapWidth / 2) / (bitmapHeight * 2);
 
 #if 0
 		RRay ray(RVec3(0, 0, -3), RVec3(dx, dy, 0.5f), 1000.0f);
@@ -262,7 +263,7 @@ void ThreadRender(int begin, int end)
 
 		RVec3 c = RVec3::Zero();
 
-		const int sample = 1;
+		const int sample = 1000;
 
 		for (int i = 0; i < 4; i++)
 		{
@@ -275,7 +276,7 @@ void ThreadRender(int begin, int end)
 
 			for (int j = 0; j < sample; j++)
 			{
-				RRay ray(RVec3(0, -1, -9), RVec3(dx + offset_x, dy + offset_y, 0.5f), 1000.0f);
+				RRay ray(RVec3(0, 0, -5), RVec3(dx + offset_x, dy + offset_y, 0.5f), 1000.0f);
 				c += RayTrace(ray);
 			}
 		}
