@@ -1,12 +1,14 @@
 
 #include "RenderWindow.h"
 #include <stdio.h>
-#include <math.h>
 #include "RRay.h"
 #include <thread>
+#include "Light.h"
 
-const int bitmapWidth = 800;
-const int bitmapHeight = 800;
+#include "Math.h"
+#include "ColorBuffer.h"
+
+#define USE_LIGHTS 0
 
 typedef unsigned int Pixel;
 
@@ -15,24 +17,6 @@ Pixel bitcolor[bitmapWidth * bitmapHeight];
 HDC g_DeviceContext;
 void PresentRenderBuffer();
 
-// [0, 1] random
-float Random()
-{
-	return (float)rand() / RAND_MAX;
-}
-
-RVec3 RandomHemisphereDir(const RVec3& dir)
-{
-	while (1)
-	{
-		float t1 = 2.0f * PI * Random();
-		float t2 = acosf(1.0f - 2.0f * Random());
-		RVec3 v(sinf(t1) * sinf(t2), cosf(t1) * sinf(t2), cosf(t2));
-
-		if (v.Dot(dir) > 0.0f)
-			return v;
-	}
-}
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -53,19 +37,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-void BufferIndexToCoord(int idx, int& x, int& y)
-{
-	x = idx % bitmapWidth;
-	y = idx / bitmapWidth;
-}
-
-int CoordToBufferIndex(int x, int y)
-{
-	if (x < 0 || x >= bitmapWidth || y < 0 || y >= bitmapHeight)
-		return -1;
-
-	return y * bitmapWidth + x;
-}
 
 enum ShapeType
 {
@@ -95,35 +66,81 @@ Shape shapes[] =
 	{ ST_Sphere, RVec3(0.0f, -1.0f, 2.0f) ,   RVec3(1.0f, 0.0f, 0.0f), RVec3(1.0f, 0.5f, 0.1f), false, MT_Diffuse | MT_Reflective },
 	//{ ST_Sphere, RVec3(1.5f, 0.0f, 2.0f) ,    RVec3(0.5f, 0.0f, 0.0f), RVec3(0.0f, 10.0f, 10.0f), false, MT_Emissive/*MT_Reflective*/ },
 	{ ST_Sphere, RVec3(1.2f, 1.0f, 3.0f) ,    RVec3(0.5f, 0.0f, 0.0f), RVec3(0.1f, 1.0f, 0.2f), false, MT_Diffuse },
-	{ ST_Sphere, RVec3(0.2f, 1.2f, 2.0f) ,    RVec3(0.5f, 0.0f, 0.0f), RVec3(0.5f, 0.0f, 0.2f), false, MT_Diffuse | MT_Reflective },
+	{ ST_Sphere, RVec3(0.2f, 1.2f, 1.0f) ,    RVec3(0.5f, 0.0f, 0.0f), RVec3(0.5f, 0.0f, 0.2f), false, MT_Diffuse | MT_Reflective },
 	{ ST_Sphere, RVec3(-2.8f, 1.2f, 4.0f) ,   RVec3(1.5f, 0.0f, 0.0f), RVec3(0.95f, 0.75f, 0.1f), false, MT_Diffuse | MT_Reflective/*MT_Reflective*/ },
-	{ ST_Sphere, RVec3(0.0f, -5.0f, 0.0f) ,    RVec3(0.5f, 0.0f, 0.0f), RVec3(50.0f, 50.0f, 60.0f), false, MT_Emissive/*MT_Reflective*/ },
+	{ ST_Sphere, RVec3(0.0f, -5.0f, 0.0f) ,    RVec3(0.5f, 0.0f, 0.0f), RVec3(100.0f, 100.0f, 120.0f), false, MT_Emissive },	// Ceiling light
 	//{ ST_Sphere, RVec3(0.0f, 0.0f, -1005.0f) , RVec3(1000.0f, 0.0f, 0.0f), RVec3(0.0f, 0.5f, 0.75f), MT_Emissive },
 	//{ ST_Sphere, RVec3(1055.0f, 0.0f, 0.0f) , RVec3(1000.0f, 0.0f, 0.0f), 0xFF007FBF, MT_Emissive },
 	//{ ST_Sphere, RVec3(-1055.0f, 0.0f, 0.0f) , RVec3(1000.0f, 0.0f, 0.0f), 0xFF007FBF, MT_Emissive },
 
-	{ ST_Plane, RVec3(0.0f, -1.0f, 0.0f) ,    RVec3(0.0f, 2.5f, 0.0f), RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse },
-	{ ST_Plane, RVec3(0.0f, 1.0f, 0.0f) ,    RVec3(0.0f, -5.0f, 0.0f), RVec3(1.2f, 1.2f, 1.5f), false, MT_Diffuse },		// Sky light plane
-	{ ST_Plane, RVec3(0.0f, 0.0f, -1.0f) ,    RVec3(0.0f, 0.0f, 5.0f), RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse },
+	{ ST_Plane, RVec3(0.0f, -1.0f, 0.0f) ,    RVec3(0.0f, 2.5f, 0.0f), RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse },			// Ground
+	{ ST_Plane, RVec3(0.0f, 1.0f, 0.0f) ,    RVec3(0.0f, -5.0f, 0.0f), RVec3(1.2f, 1.2f, 1.5f), false, MT_Diffuse },		// Ceiling / Sky light plane
+	{ ST_Plane, RVec3(0.0f, 0.0f, -1.0f) ,    RVec3(0.0f, 0.0f, 5.0f), RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse },			// Back wall
 	{ ST_Plane, RVec3(0.0f, 0.0f, 1.0f) ,    RVec3(0.0f, 0.0f, -10.0f), RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse },
-	{ ST_Plane, RVec3(-1.0f, 0.0f, 0.0f) ,    RVec3(5.0f, 0.0f, 0.0f), RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse },
-	{ ST_Plane, RVec3(1.0f, 0.0f, 0.0f) ,    RVec3(-5.0f, 0.0f, 0.0f), RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse },
+	{ ST_Plane, RVec3(-1.0f, 0.0f, 0.0f) ,    RVec3(5.0f, 0.0f, 0.0f), RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse },			// Right wall
+	{ ST_Plane, RVec3(1.0f, 0.0f, 0.0f) ,    RVec3(-5.0f, 0.0f, 0.0f), RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse },			// Left wall
 	//{ RVec3(-1005.0f, 0.0f, 0.0f) , 1000.0f, 0xFFFF0000, false },
 	//{ RVec3(1005.0f, 0.0f, 0.0f) , 1000.0f, 0xFF7FBF00, false },
 	//{ RVec3(0.0f, 0.0f, -995.0f) , 1000.0f, 0xFFFF0000, false },
 };
 
-UINT32 MakeUint32Color(unsigned char _r, unsigned char _g, unsigned char _b, unsigned char _a)
+Light lights[] =
 {
-	return (_a << 24 | _r << 16 | _g << 8 | _b);
-}
+	//{ LT_Directional,	RVec3(0.0f, -1.0f, 0.0f), RVec3(1, 1, 1) },
+	{ LT_Point,			RVec3(0.0f, -4.5f, 0.0f), RVec3(1, 1, 1) },
+};
 
-UINT32 MakePixelColor(RVec3 color)
+
+RVec3 CalculateLightColor(const Light* light, RayHitResult &result, const RVec3& surface_color)
 {
-	int r = int(min(max(color.x, 0.0f), 1.0f) * 255);
-	int g = int(min(max(color.y, 0.0f), 1.0f) * 255);
-	int b = int(min(max(color.z, 0.0f), 1.0f) * 255);
-	return MakeUint32Color(r, g, b, 255);
+	RVec3 light_dir = light->pos_dir;
+	float dist = 0.0f;
+
+	switch (light->type)
+	{
+	case LT_Point:
+		light_dir = (light->pos_dir - result.hitPoint).GetNormalizedVec3();
+		dist = (result.hitPoint - light->pos_dir).Magnitude();
+		break;
+
+	case LT_Directional:
+		light_dir = light->pos_dir;
+		dist = 1000.0f;
+		break;
+	}
+
+	RRay shadow_ray(result.hitPoint + light_dir * 0.001f, light_dir, dist);
+	bool shadow = false;
+
+	// Check if light path has been blocked by any shapes
+	for (int i = 0; i < ARRAYSIZE(shapes); i++)
+	{
+		bool hit = false;
+
+		switch (shapes[i].type)
+		{
+		case ST_Sphere:
+			hit = shadow_ray.TestSphereIntersection(shapes[i].c, shapes[i].r.x);
+			break;
+		case ST_Plane:
+			hit = shadow_ray.TestPlaneIntersection(shapes[i].c, shapes[i].r);
+			break;
+		};
+
+		if (hit)
+		{
+			shadow = true;
+			break;
+		}
+	}
+
+	if (!shadow)
+	{
+		float ldp = max(0.0f, result.hitNormal.Dot(light_dir));
+		return surface_color * ldp;
+	}
+
+	return RVec3::Zero();
 }
 
 RVec3 RayTrace(const RRay& ray, int refl_count = 0)
@@ -138,6 +155,7 @@ RVec3 RayTrace(const RRay& ray, int refl_count = 0)
 	RayHitResult result;
 	Shape* hitShape = nullptr;
 
+	// Get nearest hit point for this ray
 	for (int i = 0; i < ARRAYSIZE(shapes); i++)
 	{
 		bool hit = false;
@@ -214,6 +232,16 @@ RVec3 RayTrace(const RRay& ray, int refl_count = 0)
 				float dp = max(0.0f, result.hitNormal.Dot(newDir));
 
 				RVec3 diff_refl = RayTrace(diff_ray, refl_count + 1);
+
+#if (USE_LIGHTS == 1)
+				// Apply diffuse lighting
+				for (int i = 0; i < ARRAYSIZE(lights); i++)
+				{
+					Light* l = &lights[i];
+					c += CalculateLightColor(l, result, surface_color) * diff_ratio;
+				}
+#endif
+
 				c += surface_color * diff_refl * dp * diff_ratio;
 			}
 		}

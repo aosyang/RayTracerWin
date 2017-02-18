@@ -143,11 +143,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Math.cpp" />
     <ClCompile Include="MathHelper.cpp" />
     <ClCompile Include="RenderWindow.cpp" />
     <ClCompile Include="RRay.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ColorBuffer.h" />
+    <ClInclude Include="Light.h" />
+    <ClInclude Include="Math.h" />
     <ClInclude Include="MathHelper.h" />
     <ClInclude Include="RenderWindow.h" />
     <ClInclude Include="RRay.h" />
