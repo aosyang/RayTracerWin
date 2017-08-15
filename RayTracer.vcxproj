@@ -19,9 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{ED3E91F2-1FE3-4247-BA9B-E01D55A2AC1F}</ProjectGuid>
+    <ProjectGuid>{F066C368-C47F-4684-BE2C-9CB19C93E32D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>WinDraw</RootNamespace>
+    <RootNamespace>RayTracer</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -142,20 +142,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="Math.cpp" />
-    <ClCompile Include="MathHelper.cpp" />
-    <ClCompile Include="RenderWindow.cpp" />
-    <ClCompile Include="RRay.cpp" />
+    <ClInclude Include="Src\ColorBuffer.h" />
+    <ClInclude Include="Src\Light.h" />
+    <ClInclude Include="Src\Math.h" />
+    <ClInclude Include="Src\MathHelper.h" />
+    <ClInclude Include="Src\RenderWindow.h" />
+    <ClInclude Include="Src\RRay.h" />
+    <ClInclude Include="Src\RVector.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ColorBuffer.h" />
-    <ClInclude Include="Light.h" />
-    <ClInclude Include="Math.h" />
-    <ClInclude Include="MathHelper.h" />
-    <ClInclude Include="RenderWindow.h" />
-    <ClInclude Include="RRay.h" />
-    <ClInclude Include="RVector.h" />
+    <ClCompile Include="Src\main.cpp" />
+    <ClCompile Include="Src\Math.cpp" />
+    <ClCompile Include="Src\MathHelper.cpp" />
+    <ClCompile Include="Src\RenderWindow.cpp" />
+    <ClCompile Include="Src\RRay.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
