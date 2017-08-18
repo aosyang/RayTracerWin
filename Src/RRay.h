@@ -9,11 +9,12 @@
 #include "RVector.h"
 //#include "RAabb.h"
 
+// Ray hitting information
 struct RayHitResult
 {
-	RVec3 hitPoint;
-	RVec3 hitNormal;
-	float dist;
+	RVec3 HitPosition;
+	RVec3 HitNormal;
+	float Distance;
 };
 
 class RRay
@@ -27,8 +28,8 @@ public:
 	RRay(const RVec3& _origin, const RVec3& _dir, float _dist);
 	RRay(const RVec3& _start, const RVec3& _end);
 
-	bool TestSphereIntersection(const RVec3& c, float r, RayHitResult* result = nullptr) const;
-	bool TestPlaneIntersection(const RVec3& n, const RVec3& p0, RayHitResult* result = nullptr) const;
+	bool TestIntersectionWithSphere(const RVec3& SphereCenter, float SphereRadius, RayHitResult* result = nullptr) const;
+	bool TestIntersectionWithPlane(const RVec3& PlaneNormal, const RVec3& PointOnPlane, RayHitResult* result = nullptr) const;
 
 	//RRay Transform(const RMatrix4& mat) const;
 	//bool TestAabbIntersection(const RAabb& aabb, float* t = nullptr) const;

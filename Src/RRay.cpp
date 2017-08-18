@@ -20,7 +20,7 @@ RRay::RRay(const RVec3& _start, const RVec3& _end)
 {
 }
 
-bool RRay::TestSphereIntersection(const RVec3& c, float r, RayHitResult* result) const
+bool RRay::TestIntersectionWithSphere(const RVec3& SphereCenter, float SphereRadius, RayHitResult* result /*= nullptr*/) const
 {
 	// Reference: http://www.ccs.neu.edu/home/fell/CSU540/programs/RayTracingFormulas.htm
 
@@ -29,9 +29,9 @@ bool RRay::TestSphereIntersection(const RVec3& c, float r, RayHitResult* result)
 	float dz = Direction.z * Distance;
 
 	float _a = dx*dx + dy*dy + dz*dz;
-	float _b = 2 * dx*(Origin.x - c.x) + 2 * dy*(Origin.y - c.y) + 2 * dz*(Origin.z - c.z);
-	float _c = c.x*c.x + c.y*c.y + c.z*c.z + Origin.x*Origin.x + Origin.y*Origin.y + Origin.z*Origin.z +
-		      -2 * (c.x*Origin.x + c.y*Origin.y + c.z*Origin.z) - r*r;
+	float _b = 2 * dx*(Origin.x - SphereCenter.x) + 2 * dy*(Origin.y - SphereCenter.y) + 2 * dz*(Origin.z - SphereCenter.z);
+	float _c = SphereCenter.x*SphereCenter.x + SphereCenter.y*SphereCenter.y + SphereCenter.z*SphereCenter.z + Origin.x*Origin.x + Origin.y*Origin.y + Origin.z*Origin.z +
+		      -2 * (SphereCenter.x*Origin.x + SphereCenter.y*Origin.y + SphereCenter.z*Origin.z) - SphereRadius*SphereRadius;
 
 	float d = _b*_b - 4 * _a*_c;
 
@@ -50,9 +50,9 @@ bool RRay::TestSphereIntersection(const RVec3& c, float r, RayHitResult* result)
 
 		if (result)
 		{
-			result->hitPoint = hitPoint;
-			result->hitNormal = (hitPoint - c).GetNormalizedVec3();
-			result->dist = dist;
+			result->HitPosition = hitPoint;
+			result->HitNormal = (hitPoint - SphereCenter).GetNormalizedVec3();
+			result->Distance = dist;
 		}
 
 		return true;
@@ -61,20 +61,20 @@ bool RRay::TestSphereIntersection(const RVec3& c, float r, RayHitResult* result)
 	return false;
 }
 
-bool RRay::TestPlaneIntersection(const RVec3& n, const RVec3& p0, RayHitResult* result /*= nullptr*/) const
+bool RRay::TestIntersectionWithPlane(const RVec3& PlaneNormal, const RVec3& PointOnPlane, RayHitResult* result /*= nullptr*/) const
 {
 	// assuming vectors are all normalized
-	float denom = n.Dot(Direction);
+	float denom = PlaneNormal.Dot(Direction);
 	if (fabsf(denom) > 1e-6) {
-		RVec3 p0l0 = p0 - Origin;
-		float t = p0l0.Dot(n) / denom;
+		RVec3 p0l0 = PointOnPlane - Origin;
+		float t = p0l0.Dot(PlaneNormal) / denom;
 		if (t >= 0 && t < Distance)
 		{
 			if (result)
 			{
-				result->hitPoint = Origin + Direction * t;
-				result->hitNormal = n;
-				result->dist = t;
+				result->HitPosition = Origin + Direction * t;
+				result->HitNormal = PlaneNormal;
+				result->Distance = t;
 			}
 
 			return true;

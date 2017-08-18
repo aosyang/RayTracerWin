@@ -10,4 +10,4 @@ inline float Random()
 }
 
 // Generate random hemisphere direction
-RVec3 RandomHemisphereDir(const RVec3& dir);
+RVec3 RandomHemisphereDirection(const RVec3& dir);

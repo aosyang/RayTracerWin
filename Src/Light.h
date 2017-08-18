@@ -2,15 +2,19 @@
 
 #include "RVector.h"
 
-enum LightType
+enum ELightType
 {
 	LT_Point,
 	LT_Directional,
 };
 
-struct Light
+struct LightData
 {
-	LightType type;
-	RVec3 pos_dir;
-	RVec3 color;
+	ELightType	Type;
+	union
+	{
+		RVec3	Position;		// For point light
+		RVec3	Direction;		// For direction light
+	};
+	RVec3		Color;
 };

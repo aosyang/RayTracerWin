@@ -18,6 +18,7 @@ HDC g_DeviceContext;
 void PresentRenderBuffer();
 
 
+// Windows callback function
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
@@ -37,31 +38,32 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-
-enum ShapeType
+// Types of shapes used for ray tracing
+enum EShape
 {
 	ST_Sphere,
 	ST_Plane,
 };
 
-enum MaterialType
+enum EMaterial
 {
 	MT_Emissive		= 1 << 0,
 	MT_Diffuse		= 1 << 1,
 	MT_Reflective	= 1 << 2,
 };
 
-struct Shape
+// Data structure of a shape in the scene
+struct ShapeData
 {
-	ShapeType type;
-	RVec3 c;
-	RVec3 r;
-	RVec3 color;
-	bool pattern;
-	int matType;
+	EShape	type;
+	RVec3	c;
+	RVec3	r;
+	RVec3	Color;
+	bool	UseCheckerboardPattern;
+	int		MaterialFlags;
 };
 
-Shape shapes[] =
+ShapeData GSceneShapes[] =
 {
 	{ ST_Sphere, RVec3(0.0f, -1.0f, 2.0f) ,   RVec3(1.0f, 0.0f, 0.0f), RVec3(1.0f, 0.5f, 0.1f), false, MT_Diffuse | MT_Reflective },
 	//{ ST_Sphere, RVec3(1.5f, 0.0f, 2.0f) ,    RVec3(0.5f, 0.0f, 0.0f), RVec3(0.0f, 10.0f, 10.0f), false, MT_Emissive/*MT_Reflective*/ },
@@ -84,131 +86,134 @@ Shape shapes[] =
 	//{ RVec3(0.0f, 0.0f, -995.0f) , 1000.0f, 0xFFFF0000, false },
 };
 
-Light lights[] =
+LightData GSceneLights[] =
 {
 	//{ LT_Directional,	RVec3(0.0f, -1.0f, 0.0f), RVec3(1, 1, 1) },
 	{ LT_Point,			RVec3(0.0f, -4.5f, 0.0f), RVec3(1, 1, 1) },
 };
 
 
-RVec3 CalculateLightColor(const Light* light, RayHitResult &result, const RVec3& surface_color)
+RVec3 CalculateLightColor(const LightData* InLight, const RayHitResult &InHitResult, const RVec3& InSurfaceColor)
 {
-	RVec3 light_dir = light->pos_dir;
+	RVec3 LightDirection = InLight->Direction;
 	float dist = 0.0f;
 
-	switch (light->type)
+	switch (InLight->Type)
 	{
 	case LT_Point:
-		light_dir = (light->pos_dir - result.hitPoint).GetNormalizedVec3();
-		dist = (result.hitPoint - light->pos_dir).Magnitude();
+		LightDirection = (InLight->Position - InHitResult.HitPosition).GetNormalizedVec3();
+		dist = (InHitResult.HitPosition - InLight->Position).Magnitude();
 		break;
 
 	case LT_Directional:
-		light_dir = light->pos_dir;
+		LightDirection = InLight->Direction;
 		dist = 1000.0f;
 		break;
 	}
 
-	RRay shadow_ray(result.hitPoint + light_dir * 0.001f, light_dir, dist);
-	bool shadow = false;
+	RRay ShadowRay(InHitResult.HitPosition + LightDirection * 0.001f, LightDirection, dist);
+	bool IsInShadow = false;
 
 	// Check if light path has been blocked by any shapes
-	for (int i = 0; i < ARRAYSIZE(shapes); i++)
+	for (int i = 0; i < ARRAYSIZE(GSceneShapes); i++)
 	{
 		bool hit = false;
 
-		switch (shapes[i].type)
+		switch (GSceneShapes[i].type)
 		{
 		case ST_Sphere:
-			hit = shadow_ray.TestSphereIntersection(shapes[i].c, shapes[i].r.x);
+			hit = ShadowRay.TestIntersectionWithSphere(GSceneShapes[i].c, GSceneShapes[i].r.x);
 			break;
 		case ST_Plane:
-			hit = shadow_ray.TestPlaneIntersection(shapes[i].c, shapes[i].r);
+			hit = ShadowRay.TestIntersectionWithPlane(GSceneShapes[i].c, GSceneShapes[i].r);
 			break;
 		};
 
 		if (hit)
 		{
-			shadow = true;
+			IsInShadow = true;
 			break;
 		}
 	}
 
-	if (!shadow)
+	if (IsInShadow)
 	{
-		float ldp = max(0.0f, result.hitNormal.Dot(light_dir));
-		return surface_color * ldp;
+		// Surface is in shadow, no light contribution
+		return RVec3::Zero();
 	}
-
-	return RVec3::Zero();
+	else
+	{
+		float ldp = max(0.0f, InHitResult.HitNormal.Dot(LightDirection));
+		return InSurfaceColor * ldp;
+	}
 }
 
-RVec3 RayTrace(const RRay& ray, int refl_count = 0)
+RVec3 RayTrace(const RRay& InRay, int BouncedTimes = 0)
 {
-	RRay newRay = ray;
+	RRay TestRay = InRay;
 
-	if (refl_count > 10)
+	if (BouncedTimes > 10)
 		return RVec3::Zero();
 
-	RVec3 c = RVec3::Zero();
+	RVec3 FinalColor = RVec3::Zero();
 
 	RayHitResult result;
-	Shape* hitShape = nullptr;
+	ShapeData* hitShape = nullptr;
 
 	// Get nearest hit point for this ray
-	for (int i = 0; i < ARRAYSIZE(shapes); i++)
+	for (int i = 0; i < ARRAYSIZE(GSceneShapes); i++)
 	{
 		bool hit = false;
 		
-		switch (shapes[i].type)
+		switch (GSceneShapes[i].type)
 		{
 		case ST_Sphere:
-			hit = newRay.TestSphereIntersection(shapes[i].c, shapes[i].r.x, &result);
+			hit = TestRay.TestIntersectionWithSphere(GSceneShapes[i].c, GSceneShapes[i].r.x, &result);
 			break;
 		case ST_Plane:
-			hit = newRay.TestPlaneIntersection(shapes[i].c, shapes[i].r, &result);
+			hit = TestRay.TestIntersectionWithPlane(GSceneShapes[i].c, GSceneShapes[i].r, &result);
 			break;
 		};
 
 		if (hit)
 		{
 			// Shorten distance of current testing ray
-			newRay.Distance = result.dist;
-			hitShape = &shapes[i];
+			TestRay.Distance = result.Distance;
+			hitShape = &GSceneShapes[i];
 		}
 	}
 
 	if (hitShape)
 	{
-		float diff_ratio = 1.0f;
+		float DiffuseRatio = 1.0f;
 
-		if (hitShape->matType & MT_Reflective)
+		if (hitShape->MaterialFlags & MT_Reflective)
 		{
-			float dist = ray.Distance - result.dist;
-			if (dist > 0)
+			float RemainingDistance = InRay.Distance - result.Distance;
+			if (RemainingDistance > 0)
 			{
-				if (ray.Direction.Dot(result.hitNormal) < 0)
+				if (InRay.Direction.Dot(result.HitNormal) < 0)
 				{
-					RVec3 newDir = ray.Direction.Reflect(result.hitNormal);
+					RVec3 newDir = InRay.Direction.Reflect(result.HitNormal);
 
-					RRay reflRay(result.hitPoint + newDir * 0.001f, newDir, dist);
+					RRay reflRay(result.HitPosition + newDir * 0.001f, newDir, RemainingDistance);
 
-					const float refl_ratio = 0.5f;
-					diff_ratio = 1.0f - refl_ratio;
-					c += RayTrace(reflRay, refl_count + 1) * refl_ratio;
+					const float ReflectiveRatio = 0.5f;
+					DiffuseRatio = 1.0f - ReflectiveRatio;
+					FinalColor += RayTrace(reflRay, BouncedTimes + 1) * ReflectiveRatio;
 				}
 			}
 		}
 
-		RVec3 surface_color = hitShape->color;
+		RVec3 SurfaceColor = hitShape->Color;
 
 		// Make checkerboard pattern
-		if (hitShape->pattern)
+		if (hitShape->UseCheckerboardPattern)
 		{
 			bool color = false;
-			float fx = result.hitPoint.x * 0.2f;
-			float fy = result.hitPoint.y * 0.2f;
-			float fz = result.hitPoint.z * 0.2f;
+			float fx = result.HitPosition.x * 0.2f;
+			float fy = result.HitPosition.y * 0.2f;
+			float fz = result.HitPosition.z * 0.2f;
 
 			if (fx - floorf(fx) > 0.5f)
 				color = !color;
@@ -218,41 +223,41 @@ RVec3 RayTrace(const RRay& ray, int refl_count = 0)
 				color = !color;
 
 			if (!color)
-				surface_color /= 2.0f;
+				SurfaceColor *= 0.5f;
 		}
 
-		if (hitShape->matType & MT_Diffuse)
+		if (hitShape->MaterialFlags & MT_Diffuse)
 		{
-			float dist = ray.Distance - result.dist;
-			if (dist > 0)
+			float RemainingDistance = InRay.Distance - result.Distance;
+			if (RemainingDistance > 0)
 			{
-				RVec3 newDir = RandomHemisphereDir(result.hitNormal);
-				RRay diff_ray(result.hitPoint + newDir * 0.001f, newDir, dist);
+				RVec3 DiffuseReflectionDirection = RandomHemisphereDirection(result.HitNormal);
+				RRay DiffuseRay(result.HitPosition + DiffuseReflectionDirection * 0.001f, DiffuseReflectionDirection, RemainingDistance);
 
-				float dp = max(0.0f, result.hitNormal.Dot(newDir));
+				float DotProductResult = max(0.0f, result.HitNormal.Dot(DiffuseReflectionDirection));
 
-				RVec3 diff_refl = RayTrace(diff_ray, refl_count + 1);
+				RVec3 DiffuseColor = RayTrace(DiffuseRay, BouncedTimes + 1);
 
 #if (USE_LIGHTS == 1)
 				// Apply diffuse lighting
-				for (int i = 0; i < ARRAYSIZE(lights); i++)
+				for (int i = 0; i < ARRAYSIZE(GSceneLights); i++)
 				{
-					Light* l = &lights[i];
-					c += CalculateLightColor(l, result, surface_color) * diff_ratio;
+					LightData* l = &GSceneLights[i];
+					FinalColor += CalculateLightColor(l, result, SurfaceColor) * DiffuseRatio;
 				}
 #endif
 
-				c += surface_color * diff_refl * dp * diff_ratio;
+				FinalColor += SurfaceColor * DiffuseColor * DotProductResult * DiffuseRatio;
 			}
 		}
 
-		if (hitShape->matType & MT_Emissive)
+		if (hitShape->MaterialFlags & MT_Emissive)
 		{
-			c += surface_color;
+			FinalColor += SurfaceColor;
 		}
 	}
 
-	return c;
+	return FinalColor;
 }
 
 void PresentRenderBuffer()

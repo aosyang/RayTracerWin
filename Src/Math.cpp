@@ -1,6 +1,6 @@
 #include "Math.h"
 
-RVec3 RandomHemisphereDir(const RVec3& dir)
+RVec3 RandomHemisphereDirection(const RVec3& dir)
 {
 	while (1)
 	{
