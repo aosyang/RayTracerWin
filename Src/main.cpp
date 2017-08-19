@@ -11,12 +11,9 @@
 
 #define USE_LIGHTS 0
 
-typedef unsigned int Pixel;
-
 Pixel bitcolor[bitmapWidth * bitmapHeight];
 
-HDC g_DeviceContext;
-void PresentRenderBuffer();
+void PresentRenderBuffer(HDC DeviceContext);
 
 
 // Windows callback function
@@ -231,7 +228,7 @@ RVec3 RayTrace(const RRay& InRay, int MaxBounceTimes = 10, const RenderOption& I
 				if (!InOption.UseBaseColor)
 				{
 
-					RVec3 DiffuseReflectionDirection = RandomHemisphereDirection(result.HitNormal);
+					RVec3 DiffuseReflectionDirection = RMath::RandomHemisphereDirection(result.HitNormal);
 					RRay DiffuseRay(result.HitPosition + DiffuseReflectionDirection * 0.001f, DiffuseReflectionDirection, RemainingDistance);
 
 					DotProductResult = max(0.0f, result.HitNormal.Dot(DiffuseReflectionDirection));
@@ -261,7 +258,7 @@ RVec3 RayTrace(const RRay& InRay, int MaxBounceTimes = 10, const RenderOption& I
 	return FinalColor;
 }
 
-void PresentRenderBuffer()
+void PresentRenderBuffer(HDC DeviceContext)
 {
 	BITMAPINFO	info;
 	ZeroMemory(&info, sizeof(BITMAPINFO));
@@ -271,10 +268,10 @@ void PresentRenderBuffer()
 	info.bmiHeader.biPlanes = 1;
 	info.bmiHeader.biBitCount = 32;
 	info.bmiHeader.biCompression = BI_RGB;
-	SetDIBitsToDevice(g_DeviceContext, 0, 0, bitmapWidth, bitmapHeight, 0, 0, 0, bitmapHeight, bitcolor, &info, DIB_RGB_COLORS);
+	SetDIBitsToDevice(DeviceContext, 0, 0, bitmapWidth, bitmapHeight, 0, 0, 0, bitmapHeight, bitcolor, &info, DIB_RGB_COLORS);
 }
 
-void ThreadRender(int begin, int end, int MaxBounceCount = 10, const RenderOption& InOption = RenderOption())
+void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const RenderOption& InOption = RenderOption())
 {
 	for (int i = begin; i < end; i++)
 	{
@@ -310,8 +307,8 @@ void ThreadRender(int begin, int end, int MaxBounceCount = 10, const RenderOptio
 			float offset_y = oy[i];
 
 			// Randomize sampling point
-			offset_x += (Random() - 0.5f) * offset;
-			offset_y += (Random() - 0.5f) * offset;
+			offset_x += (RMath::Random() - 0.5f) * offset;
+			offset_y += (RMath::Random() - 0.5f) * offset;
 
 			for (int j = 0; j < sample; j++)
 			{
@@ -335,7 +332,7 @@ void UpdateBitmapPixels()
 	BaseColorOption.UseBaseColor = true;
 
 	// Draw base color for preview
-	ThreadRender(0, sizeof(bitcolor) / sizeof(Pixel), 1, BaseColorOption);
+	ThreadWorker_Render(0, sizeof(bitcolor) / sizeof(Pixel), 1, BaseColorOption);
 
 	//return;
 
@@ -346,11 +343,11 @@ void UpdateBitmapPixels()
 	for (int i = 0; i < ThreadCount; i++)
 	{
 #if 1
-		std::thread t1(ThreadRender, i * step, (i + 1) * step, 10, RenderOption());
+		std::thread t1(ThreadWorker_Render, i * step, (i + 1) * step, 10, RenderOption());
 		t1.detach();
 #else
-		ThreadRender(i * step, (i + 1) * step);
-		PresentRenderBuffer();
+		ThreadWorker_Render(i * step, (i + 1) * step);
+		PresentRenderBuffer(g_DeviceContext);
 #endif
 	}
 }
@@ -362,7 +359,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	RenderWindow rw;
 	rw.Create(WndProc, bitmapWidth, bitmapHeight);
 
-	g_DeviceContext = GetDC(rw.GetHwnd());
+	HDC WindowDC = GetDC(rw.GetHwnd());
 
 	MSG msg;
 	bool quit = false;
@@ -390,7 +387,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		}
 
 		Sleep(1);
-		PresentRenderBuffer();
+		PresentRenderBuffer(WindowDC);
 
 		frame++;
 		DWORD t = GetTickCount();

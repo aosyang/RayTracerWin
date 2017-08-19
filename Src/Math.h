@@ -3,11 +3,14 @@
 #include <stdlib.h>
 #include "RVector.h"
 
-// [0, 1] random
-inline float Random()
+namespace RMath
 {
-	return (float)rand() / RAND_MAX;
-}
+	// [0, 1] random
+	inline float Random()
+	{
+		return (float)rand() / RAND_MAX;
+	}
 
-// Generate random hemisphere direction
-RVec3 RandomHemisphereDirection(const RVec3& dir);
+	// Generate random hemisphere direction with given normal direction
+	RVec3 RandomHemisphereDirection(const RVec3& Normal);
+}

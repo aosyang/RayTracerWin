@@ -4,6 +4,8 @@
 #include <math.h>
 #include <windows.h>
 
+typedef UINT32 Pixel;
+
 const int bitmapWidth = 800;
 const int bitmapHeight = 800;
 
