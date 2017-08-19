@@ -178,6 +178,11 @@ public:
 		return x * rhs.x + y * rhs.y + z * rhs.z;
 	}
 
+	static float Dot(const RVec3& a, const RVec3& b)
+	{
+		return a.Dot(b);
+	}
+
 	// Cross product
 	RVec3 Cross(const RVec3& rhs) const
 	{

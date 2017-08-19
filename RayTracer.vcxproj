@@ -149,6 +149,7 @@
     <ClInclude Include="Src\RenderWindow.h" />
     <ClInclude Include="Src\RRay.h" />
     <ClInclude Include="Src\RVector.h" />
+    <ClInclude Include="Src\Shapes.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Src\main.cpp" />
@@ -156,6 +157,7 @@
     <ClCompile Include="Src\MathHelper.cpp" />
     <ClCompile Include="Src\RenderWindow.cpp" />
     <ClCompile Include="Src\RRay.cpp" />
+    <ClCompile Include="Src\Shapes.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
