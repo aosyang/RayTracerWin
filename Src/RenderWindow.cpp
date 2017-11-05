@@ -109,7 +109,7 @@ void RenderWindow::Destroy()
 	m_Instance = NULL;
 }
 
-LPCWSTR RenderWindow::GetTitle() const
+LPCTSTR RenderWindow::GetTitle() const
 {
 	return s_WindowTitle;
 }

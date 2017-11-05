@@ -9,7 +9,7 @@ public:
 	void Destroy();
 
 	HWND GetHwnd() const { return m_Window; }
-	LPCWSTR GetTitle() const;
+	LPCTSTR GetTitle() const;
 
 private:
 	HINSTANCE		m_Instance;			// Win32 application instance
