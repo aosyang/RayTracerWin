@@ -1,3 +1,8 @@
+//=============================================================================
+// Shapes.cpp by Shiyang Ao, 2017 All Rights Reserved.
+//
+// 
+//=============================================================================
 #include "Shapes.h"
 
 bool RSphere::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= nullptr*/) const

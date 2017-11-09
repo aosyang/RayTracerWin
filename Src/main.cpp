@@ -1,5 +1,16 @@
+//=============================================================================
+// main.cpp by Shiyang Ao, 2017 All Rights Reserved.
+//
+// 
+//=============================================================================
+#include "Platform.h"
 
-#include "RenderWindow.h"
+#if (PLATFORM_OSX)
+#include "OSX/OSXWindow.h"
+#elif (PLATFORM_WIN32)
+#include "Windows/RenderWindow.h"
+#endif
+
 #include <stdio.h>
 #include "RRay.h"
 #include <thread>
@@ -13,28 +24,6 @@
 
 Pixel bitcolor[bitmapWidth * bitmapHeight];
 
-void PresentRenderBuffer(HDC DeviceContext);
-
-
-// Windows callback function
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	switch (message)
-	{
-	case WM_DESTROY:
-		// share post quit message with WM_CLOSE
-	case WM_CLOSE:
-	{
-		PostQuitMessage(0);
-		break;
-	}
-
-	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
-	}
-
-	return 0;
-}
 
 // Types of shapes used for ray tracing
 enum EShape
@@ -102,18 +91,21 @@ LightData GSceneLights[] =
 
 RVec3 CalculateLightColor(const LightData* InLight, const RayHitResult &InHitResult, const RVec3& InSurfaceColor)
 {
-	RVec3 LightDirection = InLight->Direction;
+	RVec3 LightDirection = InLight->PositionOrDirection;
 	float dist = 0.0f;
 
 	switch (InLight->Type)
 	{
 	case LT_Point:
-		LightDirection = (InLight->Position - InHitResult.HitPosition).GetNormalizedVec3();
-		dist = (InHitResult.HitPosition - InLight->Position).Magnitude();
+		{
+			RVec3 LightPosition = InLight->PositionOrDirection;
+			LightDirection = (LightPosition - InHitResult.HitPosition).GetNormalizedVec3();
+			dist = (InHitResult.HitPosition - LightPosition).Magnitude();
+		}
 		break;
 
 	case LT_Directional:
-		LightDirection = InLight->Direction;
+		LightDirection = InLight->PositionOrDirection;
 		dist = 1000.0f;
 		break;
 	}
@@ -140,7 +132,7 @@ RVec3 CalculateLightColor(const LightData* InLight, const RayHitResult &InHitRes
 	}
 	else
 	{
-		float ldp = max(0.0f, InHitResult.HitNormal.Dot(LightDirection));
+		float ldp = Max(0.0f, InHitResult.HitNormal.Dot(LightDirection));
 		return InSurfaceColor * ldp;
 	}
 }
@@ -231,7 +223,7 @@ RVec3 RayTrace(const RRay& InRay, int MaxBounceTimes = 10, const RenderOption& I
 					RVec3 DiffuseReflectionDirection = RMath::RandomHemisphereDirection(result.HitNormal);
 					RRay DiffuseRay(result.HitPosition + DiffuseReflectionDirection * 0.001f, DiffuseReflectionDirection, RemainingDistance);
 
-					DotProductResult = max(0.0f, result.HitNormal.Dot(DiffuseReflectionDirection));
+					DotProductResult = Max(0.0f, result.HitNormal.Dot(DiffuseReflectionDirection));
 
 					DiffuseColor = RayTrace(DiffuseRay, MaxBounceTimes - 1, InOption);
 
@@ -258,19 +250,6 @@ RVec3 RayTrace(const RRay& InRay, int MaxBounceTimes = 10, const RenderOption& I
 	return FinalColor;
 }
 
-void PresentRenderBuffer(HDC DeviceContext)
-{
-	BITMAPINFO	info;
-	ZeroMemory(&info, sizeof(BITMAPINFO));
-	info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-	info.bmiHeader.biWidth = bitmapWidth;
-	info.bmiHeader.biHeight = -int(bitmapHeight); // flip
-	info.bmiHeader.biPlanes = 1;
-	info.bmiHeader.biBitCount = 32;
-	info.bmiHeader.biCompression = BI_RGB;
-	SetDIBitsToDevice(DeviceContext, 0, 0, bitmapWidth, bitmapHeight, 0, 0, 0, bitmapHeight, bitcolor, &info, DIB_RGB_COLORS);
-}
-
 void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const RenderOption& InOption = RenderOption())
 {
 	for (int i = begin; i < end; i++)
@@ -294,7 +273,7 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 
 		RVec3 c = RVec3::Zero();
 
-		int sample = 1000;
+		int sample = 100;
 
 		if (InOption.UseBaseColor)
 		{
@@ -352,56 +331,23 @@ void UpdateBitmapPixels()
 	}
 }
 
+#if (PLATFORM_WIN32)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
+#else
+int main(int argc, char *argv[])
+#endif
 {
-	SetProcessDPIAware();
-
 	RenderWindow rw;
-	rw.Create(WndProc, bitmapWidth, bitmapHeight);
+	rw.Create(bitmapWidth, bitmapHeight);
+	rw.SetRenderBufferParameters(bitmapWidth, bitmapHeight, bitcolor);
 
-	HDC WindowDC = GetDC(rw.GetHwnd());
-
-	MSG msg;
-	bool quit = false;
-
-	DWORD nextTick = GetTickCount() + 1000;
-	int frame = 0;
+	//DWORD nextTick = GetTickCount() + 1000;
+	//int frame = 0;
 
 	std::thread RenderThread(UpdateBitmapPixels);
 	RenderThread.detach();
 
-	while (!quit)
-	{
-		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-		{
-			if (msg.message == WM_QUIT)
-			{
-				quit = true;
-			}
-			else
-			{
-				// Translate the message and dispatch it to WndProc()
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
-			}
-		}
-
-		Sleep(1);
-		PresentRenderBuffer(WindowDC);
-
-		frame++;
-		DWORD t = GetTickCount();
-		if (t >= nextTick)
-		{
-			nextTick = t + 1000;
-#if 0
-			char buf[1024];
-			sprintf_s(buf, "FPS: %d\n", frame);
-			OutputDebugStringA(buf);
-#endif
-			frame = 0;
-		}
-	}
+	rw.RunWindowLoop();
 
 	rw.Destroy();
 

@@ -1,11 +1,38 @@
+//=============================================================================
+// RenderWindow.cpp by Shiyang Ao, 2017 All Rights Reserved.
+//
+// 
+//=============================================================================
 #include "RenderWindow.h"
 #include <tchar.h>
 
 static const TCHAR s_WindowClassName[] = _T("RenderWindow");
 static const TCHAR s_WindowTitle[] = _T("Ray Tracer");
 
-bool RenderWindow::Create(WNDPROC WndProc, int width, int height, bool fullscreen /*= false*/, int bpp /*= 32*/)
+// Windows callback function
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	switch (message)
+	{
+	case WM_DESTROY:
+		// share post quit message with WM_CLOSE
+	case WM_CLOSE:
+	{
+		PostQuitMessage(0);
+		break;
+	}
+
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+
+	return 0;
+}
+
+bool RenderWindow::Create(int width, int height, bool fullscreen /*= false*/, int bpp /*= 32*/)
+{
+	SetProcessDPIAware();
+
 	m_Instance = GetModuleHandle(NULL);
 	m_bFullScreen = fullscreen;
 
@@ -89,6 +116,8 @@ bool RenderWindow::Create(WNDPROC WndProc, int width, int height, bool fullscree
 		return false;
 	}
 
+	m_WindowDC = GetDC(m_Window);
+
 	ShowWindow(m_Window, SW_SHOW);
 	SetForegroundWindow(m_Window);
 	SetFocus(m_Window);
@@ -107,6 +136,66 @@ void RenderWindow::Destroy()
 	m_Window = NULL;
 	UnregisterClass(s_WindowClassName, m_Instance);
 	m_Instance = NULL;
+}
+
+
+void RenderWindow::SetRenderBufferParameters(int BufferWidth, int BufferHeight, void* BufferData)
+{
+	m_BufferWidth = BufferWidth;
+	m_BufferHeight = BufferHeight;
+	m_BufferData = BufferData;
+}
+
+void RenderWindow::PresentRenderBuffer()
+{
+	BITMAPINFO	info;
+	ZeroMemory(&info, sizeof(BITMAPINFO));
+	info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+	info.bmiHeader.biWidth = m_BufferWidth;
+	info.bmiHeader.biHeight = -int(m_BufferHeight); // flip
+	info.bmiHeader.biPlanes = 1;
+	info.bmiHeader.biBitCount = 32;
+	info.bmiHeader.biCompression = BI_RGB;
+	SetDIBitsToDevice(m_WindowDC, 0, 0, m_BufferWidth, m_BufferHeight, 0, 0, 0, m_BufferHeight, m_BufferData, &info, DIB_RGB_COLORS);
+}
+
+void RenderWindow::RunWindowLoop()
+{
+	MSG msg;
+	bool quit = false;
+
+	while (!quit)
+	{
+		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			if (msg.message == WM_QUIT)
+			{
+				quit = true;
+			}
+			else
+			{
+				// Translate the message and dispatch it to WndProc()
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+
+		Sleep(1);
+		PresentRenderBuffer();
+
+//		frame++;
+//		DWORD t = GetTickCount();
+//		if (t >= nextTick)
+//		{
+//			nextTick = t + 1000;
+//#if 0
+//			char buf[1024];
+//			sprintf_s(buf, "FPS: %d\n", frame);
+//			OutputDebugStringA(buf);
+//#endif
+//			frame = 0;
+//		}
+	}
 }
 
 LPCTSTR RenderWindow::GetTitle() const
