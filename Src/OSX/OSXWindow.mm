@@ -25,7 +25,8 @@ bool RenderWindow::Create(int width, int height, bool fullscreen, int bpp)
     
     NSUInteger windowStyle = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable;
     
-    NSRect windowRect = NSMakeRect(100, 100, width, height);
+    CGSize ScreenSize = [[NSScreen mainScreen] frame].size;
+    NSRect windowRect = NSMakeRect((ScreenSize.width - width)/2, (ScreenSize.height - height)/2, width, height);
     Window = [[NSWindow alloc] initWithContentRect:windowRect styleMask:windowStyle backing:NSBackingStoreBuffered defer:NO];
     
     // Create custom view for rendering
