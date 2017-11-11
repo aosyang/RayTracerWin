@@ -132,7 +132,7 @@ RVec3 CalculateLightColor(const LightData* InLight, const RayHitResult &InHitRes
 	}
 	else
 	{
-		float ldp = Max(0.0f, InHitResult.HitNormal.Dot(LightDirection));
+        float ldp = Math::Max(0.0f, InHitResult.HitNormal.Dot(LightDirection));
 		return InSurfaceColor * ldp;
 	}
 }
@@ -223,7 +223,7 @@ RVec3 RayTrace(const RRay& InRay, int MaxBounceTimes = 10, const RenderOption& I
 					RVec3 DiffuseReflectionDirection = RMath::RandomHemisphereDirection(result.HitNormal);
 					RRay DiffuseRay(result.HitPosition + DiffuseReflectionDirection * 0.001f, DiffuseReflectionDirection, RemainingDistance);
 
-					DotProductResult = Max(0.0f, result.HitNormal.Dot(DiffuseReflectionDirection));
+                    DotProductResult = Math::Max(0.0f, result.HitNormal.Dot(DiffuseReflectionDirection));
 
 					DiffuseColor = RayTrace(DiffuseRay, MaxBounceTimes - 1, InOption);
 
@@ -341,9 +341,7 @@ int main(int argc, char *argv[])
 	rw.Create(bitmapWidth, bitmapHeight);
 	rw.SetRenderBufferParameters(bitmapWidth, bitmapHeight, bitcolor);
 
-	//DWORD nextTick = GetTickCount() + 1000;
-	//int frame = 0;
-
+    // Begin ray tracing render thread
 	std::thread RenderThread(UpdateBitmapPixels);
 	RenderThread.detach();
 

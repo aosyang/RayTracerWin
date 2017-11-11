@@ -44,7 +44,7 @@
 
 -(void)startUpdate
 {
-    [NSTimer scheduledTimerWithTimeInterval: 0.05
+    [NSTimer scheduledTimerWithTimeInterval: 0.02
                                      target: self
                                    selector: @selector(OnTimer)
                                    userInfo: nil

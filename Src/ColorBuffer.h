@@ -9,12 +9,6 @@
 #include "RVector.h"
 #include <math.h>
 
-template <typename T>
-inline const T& Min(const T& a, const T& b) { return a < b ? a : b; }
-
-template <typename T>
-inline const T& Max(const T& a, const T& b) { return a > b ? a : b; }
-
 typedef UINT32 Pixel;
 
 const int bitmapWidth = 800;
@@ -46,8 +40,8 @@ inline UINT32 MakeUint32Color(unsigned char _r, unsigned char _g, unsigned char 
 
 inline UINT32 MakePixelColor(RVec3 color)
 {
-	int r = int(Min(Max(color.x, 0.0f), 1.0f) * 255);
-	int g = int(Min(Max(color.y, 0.0f), 1.0f) * 255);
-	int b = int(Min(Max(color.z, 0.0f), 1.0f) * 255);
+    int r = int(Math::Min(Math::Max(color.x, 0.0f), 1.0f) * 255);
+	int g = int(Math::Min(Math::Max(color.y, 0.0f), 1.0f) * 255);
+	int b = int(Math::Min(Math::Max(color.z, 0.0f), 1.0f) * 255);
 	return MakeUint32Color(r, g, b, 255);
 }
