@@ -15,8 +15,9 @@
 
 namespace
 {
-    OSXRenderView* RenderView;
     NSWindow* Window;
+    OSXRenderView* RenderView;
+    id AppDelegate;
 }
 
 bool RenderWindow::Create(int width, int height, bool fullscreen, int bpp)
@@ -36,7 +37,7 @@ bool RenderWindow::Create(int width, int height, bool fullscreen, int bpp)
     [Window setContentView:RenderView];
     
     // Use application delegate to handle program exit when user closes the window
-    id AppDelegate = [[OSXAppDelegate alloc] init];
+    AppDelegate = [[OSXAppDelegate alloc] init];
     [NSApp setDelegate:AppDelegate];
     
     [Window orderFrontRegardless];
@@ -48,7 +49,9 @@ bool RenderWindow::Create(int width, int height, bool fullscreen, int bpp)
 
 void RenderWindow::Destroy()
 {
-    
+    [AppDelegate release];
+    [RenderView release];
+    [Window release];
 }
 
 void RenderWindow::SetRenderBufferParameters(int BufferWidth, int BufferHeight, void* BufferData)
