@@ -10,6 +10,5 @@
 
 @interface OSXAppDelegate : NSObject
 
--(BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication*)theApplication;
 
 @end
