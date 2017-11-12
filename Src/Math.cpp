@@ -12,30 +12,28 @@
 
 namespace
 {
-	const char* RandomDataFileName = "pruv.bin";
-	const unsigned int MaxUnitVectorNum = 0xFFFFFF;
+	const unsigned int MaxUnitVectorNums = 0xFFFFFF;
 
-	RVec3 PseudoRandomUnitVectors[MaxUnitVectorNum];
-	unsigned int PseudoRandomIndex = 0;
-	std::mutex PseudoRandomUnitVectorMutex;
+	RVec3 PseudoRandomUnitVectors[MaxUnitVectorNums];
 }
 
 namespace RMath
 {
 	void InitPseudoRandomUnitVector()
 	{
-		for (int i = 0; i < MaxUnitVectorNum; i++)
+		// Generate pseudo random unit vectors
+		for (int i = 0; i < MaxUnitVectorNums; i++)
 		{
 			PseudoRandomUnitVectors[i] = RandomUnitVector();
 		}
-
-		PseudoRandomIndex = Math::RandRangedInt(0, MaxUnitVectorNum);
 	}
     
 	RVec3 PseudoRandomUnitVector()
 	{
-		std::unique_lock<std::mutex> UniqueLock(PseudoRandomUnitVectorMutex);
-		PseudoRandomIndex = PseudoRandomIndex % MaxUnitVectorNum;
+		// Initialize per-thread pseudo random index
+		static thread_local unsigned int PseudoRandomIndex = Math::RandRangedInt(0, MaxUnitVectorNums);
+
+		PseudoRandomIndex = PseudoRandomIndex % MaxUnitVectorNums;
 		return PseudoRandomUnitVectors[PseudoRandomIndex++];
 	}
 
