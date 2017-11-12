@@ -337,6 +337,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 int main(int argc, char *argv[])
 #endif
 {
+	RMath::InitPseudoRandomUnitVector();
+
 	RenderWindow rw;
 	rw.Create(bitmapWidth, bitmapHeight);
 	rw.SetRenderBufferParameters(bitmapWidth, bitmapHeight, bitcolor);

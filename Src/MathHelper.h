@@ -22,6 +22,15 @@ namespace Math
 	// Returns random float in [a, b).
 	float RandF(float a, float b);
 
+	// Returns random integer in [a, b]
+	inline int RandRangedInt(int a, int b)
+	{
+		float f = RandF();
+		if (f == 1.0f) f = 0.0f;
+		int d = (int)(f * (b - a + 1));
+		return a + d;
+	}
+
 	template<typename T>
 	const T& Max(const T& a, const T& b) { return (a > b) ? a : b; }
 
