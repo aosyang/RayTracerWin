@@ -93,8 +93,9 @@ bool RRay::TestAabbIntersection(const RAabb& aabb, float* t/*=nullptr*/) const
 
     if (!FLT_EQUAL_ZERO(Direction.x))
     {
-        float tx1 = (aabb.pMin.x - Origin.x) / Direction.x;
-        float tx2 = (aabb.pMax.x - Origin.x) / Direction.x;
+		float inv_x = 1.0f / Direction.x;
+        float tx1 = (aabb.pMin.x - Origin.x) * inv_x;
+        float tx2 = (aabb.pMax.x - Origin.x) * inv_x;
 
         tmin = Math::Max(tmin, Math::Min(tx1, tx2));
         tmax = Math::Min(tmax, Math::Max(tx1, tx2));
@@ -102,8 +103,9 @@ bool RRay::TestAabbIntersection(const RAabb& aabb, float* t/*=nullptr*/) const
 
     if (!FLT_EQUAL_ZERO(Direction.y))
     {
-        float ty1 = (aabb.pMin.y - Origin.y) / Direction.y;
-        float ty2 = (aabb.pMax.y - Origin.y) / Direction.y;
+		float inv_y = 1.0f / Direction.y;
+		float ty1 = (aabb.pMin.y - Origin.y) * inv_y;
+        float ty2 = (aabb.pMax.y - Origin.y) * inv_y;
 
         tmin = Math::Max(tmin, Math::Min(ty1, ty2));
         tmax = Math::Min(tmax, Math::Max(ty1, ty2));
@@ -111,8 +113,9 @@ bool RRay::TestAabbIntersection(const RAabb& aabb, float* t/*=nullptr*/) const
 
     if (!FLT_EQUAL_ZERO(Direction.z))
     {
-        float tz1 = (aabb.pMin.z - Origin.z) / Direction.z;
-        float tz2 = (aabb.pMax.z - Origin.z) / Direction.z;
+		float inv_z = 1.0f / Direction.z;
+        float tz1 = (aabb.pMin.z - Origin.z) * inv_z;
+        float tz2 = (aabb.pMax.z - Origin.z) * inv_z;
 
         tmin = Math::Max(tmin, Math::Min(tz1, tz2));
         tmax = Math::Min(tmax, Math::Max(tz1, tz2));
@@ -120,8 +123,11 @@ bool RRay::TestAabbIntersection(const RAabb& aabb, float* t/*=nullptr*/) const
 
     if (tmax > tmin)
     {
-        if (t)
-            *t = tmin;
+		if (t)
+		{
+			*t = tmin;
+		}
+
         return true;
     }
 
