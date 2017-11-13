@@ -13,6 +13,9 @@ class RShape
 {
 public:
 	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const { return false; }
+    
+protected:
+    RAabb Aabb;
 };
 
 
@@ -25,7 +28,9 @@ public:
 
 	RSphere(const RVec3& InCenter, float InRadius)
 		: Center(InCenter), Radius(InRadius)
-	{}
+	{
+        Aabb.ExpandBySphere(Center, Radius);
+    }
 
 	static RShape* Create(const RVec3& InCenter, float InRadius) { return new RSphere(InCenter, InRadius); }
 
@@ -58,7 +63,10 @@ public:
 
 	RCapsule(const RVec3& InStart, const RVec3& InEnd, float InRadius)
 		: Start(InStart), End(InEnd), Radius(InRadius)
-	{}
+	{
+        Aabb.ExpandBySphere(Start, Radius);
+        Aabb.ExpandBySphere(End, Radius);
+    }
 
 	static RShape* Create(const RVec3& InStart, const RVec3& InEnd, float InRadius) { return new RCapsule(InStart, InEnd, InRadius); }
 

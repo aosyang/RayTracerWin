@@ -7,7 +7,12 @@
 
 bool RSphere::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= nullptr*/) const
 {
-	return InRay.TestIntersectionWithSphere(Center, Radius, OutResult);
+    if (!InRay.TestAabbIntersection(Aabb))
+    {
+        return false;
+    }
+
+    return InRay.TestIntersectionWithSphere(Center, Radius, OutResult);
 }
 
 bool RPlane::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= nullptr*/) const
@@ -17,6 +22,11 @@ bool RPlane::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= 
 
 bool RCapsule::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= nullptr*/) const
 {
+    if (!InRay.TestAabbIntersection(Aabb))
+    {
+        return false;
+    }
+    
 	if (!TestRayCylinderIntersection(InRay, OutResult))
 	{
 		RayHitResult r1, r2;

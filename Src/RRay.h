@@ -7,7 +7,7 @@
 #define _RRAY_H
 
 #include "RVector.h"
-//#include "RAabb.h"
+#include "RAabb.h"
 
 // Ray hitting information
 struct RayHitResult
@@ -31,8 +31,7 @@ public:
 	bool TestIntersectionWithSphere(const RVec3& SphereCenter, float SphereRadius, RayHitResult* result = nullptr) const;
 	bool TestIntersectionWithPlane(const RVec3& PlaneNormal, const RVec3& PointOnPlane, RayHitResult* result = nullptr) const;
 
-	//RRay Transform(const RMatrix4& mat) const;
-	//bool TestAabbIntersection(const RAabb& aabb, float* t = nullptr) const;
+	bool TestAabbIntersection(const RAabb& aabb, float* t = nullptr) const;
 };
 
 #endif

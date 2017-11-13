@@ -291,7 +291,8 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 
 			for (int j = 0; j < sample; j++)
 			{
-				RRay ray(RVec3(0, 0, -5), RVec3(dx + offset_x, dy + offset_y, 0.5f), 1000.0f);
+                RVec3 Dir(dx + offset_x, dy + offset_y, 0.5f);
+				RRay ray(RVec3(0, 0, -5), Dir.GetNormalizedVec3(), 1000.0f);
 				c += RayTrace(ray, MaxBounceCount, InOption);
 			}
 		}
