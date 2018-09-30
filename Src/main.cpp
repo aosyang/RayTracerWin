@@ -20,10 +20,40 @@
 #include "ColorBuffer.h"
 #include "Shapes.h"
 
+#include <vector>
+#include <chrono>
+
 #define USE_LIGHTS 0
 
 Pixel bitcolor[bitmapWidth * bitmapHeight];
 
+struct AccumulatePixel
+{
+	AccumulatePixel()
+		: R(0), G(0), B(0), Num(0)
+	{}
+
+	void AddPixel(Pixel Color)
+	{
+		R += GetUint32ColorRed(Color);
+		G += GetUint32ColorGreen(Color);
+		B += GetUint32ColorBlue(Color);
+		Num++;
+	}
+
+	Pixel GetPixel()
+	{
+		return MakeUint32Color((BYTE)(R / Num), (BYTE)(G / Num), (BYTE)(B / Num), 0xFF);
+	}
+
+	int R;
+	int G;
+	int B;
+	int Num;
+};
+
+AccumulatePixel accuBuffer[bitmapWidth * bitmapHeight];
+RenderWindow g_RenderWindow;
 
 // Types of shapes used for ray tracing
 enum EShape
@@ -252,10 +282,11 @@ RVec3 RayTrace(const RRay& InRay, int MaxBounceTimes = 10, const RenderOption& I
 
 void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const RenderOption& InOption = RenderOption())
 {
-	for (int i = begin; i < end; i++)
+//#pragma omp parallel for schedule(dynamic, 1)
+	for (int PixelIndex = begin; PixelIndex < end; PixelIndex++)
 	{
 		int x, y;
-		BufferIndexToCoord(i, x, y);
+		BufferIndexToCoord(PixelIndex, x, y);
 		float dx = (float)(x - bitmapWidth / 2) / (bitmapWidth * 2);
 		float dy = (float)(y - bitmapWidth / 2) / (bitmapHeight * 2);
 
@@ -273,13 +304,7 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 
 		RVec3 c = RVec3::Zero();
 
-		int sample = 100;
-
-		if (InOption.UseBaseColor)
-		{
-			sample = 1;
-		}
-
+		// Randomly sample 4x4 nearby pixels for antialiasing
 		for (int i = 0; i < 4; i++)
 		{
 			float offset_x = ox[i];
@@ -289,20 +314,25 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 			offset_x += (RMath::Random() - 0.5f) * offset;
 			offset_y += (RMath::Random() - 0.5f) * offset;
 
-			for (int j = 0; j < sample; j++)
-			{
-                RVec3 Dir(dx + offset_x, dy + offset_y, 0.5f);
-				RRay ray(RVec3(0, 0, -5), Dir.GetNormalizedVec3(), 1000.0f);
-				c += RayTrace(ray, MaxBounceCount, InOption);
-			}
+			RVec3 Dir(dx + offset_x, dy + offset_y, 0.5f);
+			RRay ray(RVec3(0, 0, -5), Dir.GetNormalizedVec3(), 1000.0f);
+			c += RayTrace(ray, MaxBounceCount, InOption);
 		}
 
-		c /= 4.0f * sample;
+		c /= 4.0f;
 		Pixel color = MakePixelColor(c);
 #endif
 
-		// ARGB
-		*(bitcolor + i) = color;
+		if (InOption.UseBaseColor)
+		{
+			// ARGB
+			*(bitcolor + PixelIndex) = color;
+		}
+		else
+		{
+			accuBuffer[PixelIndex].AddPixel(color);
+			*(bitcolor + PixelIndex) = accuBuffer[PixelIndex].GetPixel();
+		}
 	}
 }
 
@@ -320,15 +350,38 @@ void UpdateBitmapPixels()
 
 	int step = sizeof(bitcolor) / sizeof(Pixel) / ThreadCount;
 
-	for (int i = 0; i < ThreadCount; i++)
+	std::vector<std::thread> RenderThreads;
+	static const int TotalSamplesNum = 500;
+
+	auto StartTime = std::chrono::system_clock::now();
+
+	for (int Sample = 0; Sample < TotalSamplesNum; Sample++)
 	{
+		for (int i = 0; i < ThreadCount; i++)
+		{
 #if 1
-		std::thread t1(ThreadWorker_Render, i * step, (i + 1) * step, 10, RenderOption());
-		t1.detach();
+			RenderThreads.push_back(std::thread(ThreadWorker_Render, i * step, (i + 1) * step, 10, RenderOption()));
 #else
-		ThreadWorker_Render(i * step, (i + 1) * step);
-		PresentRenderBuffer(g_DeviceContext);
+			ThreadWorker_Render(i * step, (i + 1) * step);
+			PresentRenderBuffer(g_DeviceContext);
 #endif
+		}
+
+		// Wait until all threads finish their work of current sample
+		for (auto& Thread : RenderThreads)
+		{
+			Thread.join();
+		}
+
+		RenderThreads.clear();
+
+		auto CurrentTime = std::chrono::system_clock::now();
+		auto ElapsedTime = std::chrono::duration_cast<std::chrono::seconds>(CurrentTime - StartTime);
+		auto RemainingTime = ElapsedTime / (Sample + 1) * (TotalSamplesNum - Sample - 1);
+
+		char buf[1024];
+		sprintf_s(buf, sizeof(buf), "Ray Tracer - Sample: %d/%d | Elapsed time: %ds | Remaining: %ds", Sample + 1, TotalSamplesNum, (int)ElapsedTime.count(), (int)RemainingTime.count());
+		g_RenderWindow.SetTitle(buf);
 	}
 }
 
@@ -340,17 +393,16 @@ int main(int argc, char *argv[])
 {
 	RMath::InitPseudoRandomUnitVector();
 
-	RenderWindow rw;
-	rw.Create(bitmapWidth, bitmapHeight);
-	rw.SetRenderBufferParameters(bitmapWidth, bitmapHeight, bitcolor);
+	g_RenderWindow.Create(bitmapWidth, bitmapHeight);
+	g_RenderWindow.SetRenderBufferParameters(bitmapWidth, bitmapHeight, bitcolor);
 
     // Begin ray tracing render thread
 	std::thread RenderThread(UpdateBitmapPixels);
 	RenderThread.detach();
 
-	rw.RunWindowLoop();
+	g_RenderWindow.RunWindowLoop();
 
-	rw.Destroy();
+	g_RenderWindow.Destroy();
 
 	return 0;
 }

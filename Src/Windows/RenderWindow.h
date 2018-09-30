@@ -19,6 +19,7 @@ public:
 
 	HWND GetHwnd() const { return m_Window; }
 	LPCTSTR GetTitle() const;
+	void SetTitle(const char* Title);
 
 protected:
 	void PresentRenderBuffer();

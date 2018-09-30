@@ -10,6 +10,7 @@
 #include <math.h>
 
 typedef UINT32 Pixel;
+typedef unsigned char BYTE;
 
 const int bitmapWidth = 800;
 const int bitmapHeight = 800;
@@ -28,8 +29,7 @@ inline int CoordToBufferIndex(int x, int y)
 	return y * bitmapWidth + x;
 }
 
-
-inline UINT32 MakeUint32Color(unsigned char _r, unsigned char _g, unsigned char _b, unsigned char _a)
+inline UINT32 MakeUint32Color(BYTE _r, BYTE _g, BYTE _b, BYTE _a)
 {
 #if (PLATFORM_OSX)
 	return (_r << 24 | _g << 16 | _b << 8 | _a);
@@ -37,6 +37,34 @@ inline UINT32 MakeUint32Color(unsigned char _r, unsigned char _g, unsigned char 
 	return (_a << 24 | _r << 16 | _g << 8 | _b);
 #endif
 }
+
+inline BYTE GetUint32ColorRed(UINT32 Color)
+{
+#if (PLATFORM_OSX)
+	return (BYTE)((Color >> 24) & 0xFF);
+#else
+	return (BYTE)((Color >> 16) & 0xFF);
+#endif
+}
+
+inline BYTE GetUint32ColorGreen(UINT32 Color)
+{
+#if (PLATFORM_OSX)
+	return (BYTE)((Color >> 16) & 0xFF);
+#else
+	return (BYTE)((Color >> 8) & 0xFF);
+#endif
+}
+
+inline BYTE GetUint32ColorBlue(UINT32 Color)
+{
+#if (PLATFORM_OSX)
+	return (BYTE)((Color >> 8) & 0xFF);
+#else
+	return (BYTE)(Color & 0xFF);
+#endif
+}
+
 
 inline UINT32 MakePixelColor(RVec3 color)
 {

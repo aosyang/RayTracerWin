@@ -31,7 +31,7 @@ namespace RMath
 	RVec3 PseudoRandomUnitVector()
 	{
 		// Initialize per-thread pseudo random index
-		static thread_local unsigned int PseudoRandomIndex = Math::RandRangedInt(0, MaxUnitVectorNums);
+		static unsigned int PseudoRandomIndex = Math::RandRangedInt(0, MaxUnitVectorNums);
 
 		PseudoRandomIndex = PseudoRandomIndex % MaxUnitVectorNums;
 		return PseudoRandomUnitVectors[PseudoRandomIndex++];

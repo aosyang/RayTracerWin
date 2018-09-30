@@ -203,4 +203,9 @@ LPCTSTR RenderWindow::GetTitle() const
 	return s_WindowTitle;
 }
 
+void RenderWindow::SetTitle(const char* Title)
+{
+	SetWindowTextA(m_Window, Title);
+}
+
 
