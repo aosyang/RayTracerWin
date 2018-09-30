@@ -41,7 +41,7 @@ struct AccumulatePixel
 
 	Pixel GetPixel()
 	{
-		return MakePixelColor(AccumulatedColor / Num);
+		return MakePixelColor(AccumulatedColor / (float)Num);
 	}
 
 	RVec3 AccumulatedColor;
@@ -389,6 +389,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 int main(int argc, char *argv[])
 #endif
 {
+	srand((unsigned int)time(nullptr));
+
 	RMath::InitPseudoRandomUnitVector();
 
 	g_RenderWindow.Create(bitmapWidth, bitmapHeight);
