@@ -378,7 +378,7 @@ void UpdateBitmapPixels()
 		int RemainingTimeSec = (int)(RemainingTime.count() / 1000);
 
 		char buf[1024];
-		sprintf_s(buf, sizeof(buf), "Ray Tracer - S: [%d/%d] | T: [%ds/%ds]", Sample + 1, TotalSamplesNum, ElapsedTimeSec, RemainingTimeSec);
+		sprintf(buf, "Ray Tracer - S: [%d/%d] | T: [%ds/%ds]", Sample + 1, TotalSamplesNum, ElapsedTimeSec, RemainingTimeSec);
 		g_RenderWindow.SetTitle(buf);
 	}
 }

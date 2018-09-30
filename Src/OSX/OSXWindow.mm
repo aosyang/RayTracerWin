@@ -66,3 +66,10 @@ void RenderWindow::RunWindowLoop()
     [NSApp run];
 }
 
+void RenderWindow::SetTitle(const char* Title)
+{
+    // TODO: Fix title bar setting issues on OSX
+    
+    //NSString* windowTitle = [NSString stringWithCString:Title encoding:NSASCIIStringEncoding];
+    //[Window setTitle:windowTitle];
+}

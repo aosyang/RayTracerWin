@@ -15,4 +15,6 @@ public:
     void SetRenderBufferParameters(int BufferWidth, int BufferHeight, void* BufferData);
     
     void RunWindowLoop();
+    
+    void SetTitle(const char* Title);
 };
