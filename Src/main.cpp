@@ -376,11 +376,13 @@ void UpdateBitmapPixels()
 		RenderThreads.clear();
 
 		auto CurrentTime = std::chrono::system_clock::now();
-		auto ElapsedTime = std::chrono::duration_cast<std::chrono::seconds>(CurrentTime - StartTime);
+		auto ElapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(CurrentTime - StartTime);
 		auto RemainingTime = ElapsedTime / (Sample + 1) * (TotalSamplesNum - Sample - 1);
+		int ElapsedTimeSec = (int)(ElapsedTime.count() / 1000);
+		int RemainingTimeSec = (int)(RemainingTime.count() / 1000);
 
 		char buf[1024];
-		sprintf_s(buf, sizeof(buf), "Ray Tracer - Sample: %d/%d | Elapsed time: %ds | Remaining: %ds", Sample + 1, TotalSamplesNum, (int)ElapsedTime.count(), (int)RemainingTime.count());
+		sprintf_s(buf, sizeof(buf), "Ray Tracer - S: [%d/%d] | T: [%ds/%ds]", Sample + 1, TotalSamplesNum, ElapsedTimeSec, RemainingTimeSec);
 		g_RenderWindow.SetTitle(buf);
 	}
 }
