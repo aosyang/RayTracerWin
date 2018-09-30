@@ -30,25 +30,21 @@ Pixel bitcolor[bitmapWidth * bitmapHeight];
 struct AccumulatePixel
 {
 	AccumulatePixel()
-		: R(0), G(0), B(0), Num(0)
+		: AccumulatedColor(0, 0, 0), Num(0)
 	{}
 
-	void AddPixel(Pixel Color)
+	void AddPixel(RVec3 Color)
 	{
-		R += GetUint32ColorRed(Color);
-		G += GetUint32ColorGreen(Color);
-		B += GetUint32ColorBlue(Color);
+		AccumulatedColor += Color;
 		Num++;
 	}
 
 	Pixel GetPixel()
 	{
-		return MakeUint32Color((BYTE)(R / Num), (BYTE)(G / Num), (BYTE)(B / Num), 0xFF);
+		return MakePixelColor(AccumulatedColor / Num);
 	}
 
-	int R;
-	int G;
-	int B;
+	RVec3 AccumulatedColor;
 	int Num;
 };
 
@@ -320,17 +316,17 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 		}
 
 		c /= 4.0f;
-		Pixel color = MakePixelColor(c);
 #endif
 
 		if (InOption.UseBaseColor)
 		{
 			// ARGB
+			Pixel color = MakePixelColor(c);
 			*(bitcolor + PixelIndex) = color;
 		}
 		else
 		{
-			accuBuffer[PixelIndex].AddPixel(color);
+			accuBuffer[PixelIndex].AddPixel(c);
 			*(bitcolor + PixelIndex) = accuBuffer[PixelIndex].GetPixel();
 		}
 	}
