@@ -434,8 +434,14 @@ void UpdateBitmapPixels()
 		int RemainingTimeSec = (int)(RemainingTime.count() / 1000);
 
 		char buf[1024];
-		sprintf(buf, "Ray Tracer - S: [%d/%d] | T: [%ds/%ds]", Sample + 1, TotalSamplesNum, ElapsedTimeSec, RemainingTimeSec);
-		g_RenderWindow.SetTitle(buf);
+		sprintf(buf, "S: [%d/%d] | T: [%ds/%ds]", Sample + 1, TotalSamplesNum, ElapsedTimeSec, RemainingTimeSec);
+#if (PLATFORM_OSX)
+        printf("%s\n", buf);
+#else
+        char strTitle[1024];
+        sprintf(strTitle, "RayTracer - %s", buf);
+		g_RenderWindow.SetTitle(strTitle);
+#endif  // PLATFORM_OSX
 	}
 }
 
