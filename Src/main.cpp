@@ -20,6 +20,8 @@
 #include "ColorBuffer.h"
 #include "Shapes.h"
 
+#include "ThreadTaskQueue.h"
+
 #include <vector>
 #include <chrono>
 
@@ -73,6 +75,26 @@ struct RenderOption
 		: UseBaseColor(false)
 	{}
 };
+
+struct RenderThreadTask
+{
+	RenderThreadTask()
+	{
+	}
+
+	RenderThreadTask(int InStart, int InEnd, const RenderOption& InOption)
+		: Start(InStart)
+		, End(InEnd)
+		, Option(InOption)
+	{
+	}
+
+	int Start;
+	int End;
+	RenderOption Option;
+};
+
+ThreadTaskQueue<RenderThreadTask> g_TaskQueue;
 
 // Data structure of a shape in the scene
 struct ShapeData
@@ -332,31 +354,67 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 	}
 }
 
+void ThreadTaskWorker()
+{
+	RenderThreadTask Task;
+
+	// Run until all tasks are finished
+	while (g_TaskQueue.GetTask(&Task))
+	{
+		ThreadWorker_Render(Task.Start, Task.End, 10, Task.Option);
+	}
+}
+
 void UpdateBitmapPixels()
 {
+	// Total number of worker threads
+	const int ThreadCount = 8;
+
 	RenderOption BaseColorOption;
 	BaseColorOption.UseBaseColor = true;
 
 	// Draw base color for preview
-	ThreadWorker_Render(0, sizeof(bitcolor) / sizeof(Pixel), 1, BaseColorOption);
+	{
+		std::vector<std::thread> RenderThreads;
 
-	//return;
+		// Split rendering area to tasks
+		for (int i = 0; i < bitmapHeight; i++)
+		{
+			g_TaskQueue.AddTask(RenderThreadTask(i * bitmapWidth, (i + 1) * bitmapWidth - 1, BaseColorOption));
+		}
 
-	const int ThreadCount = 8;
+		for (int i = 0; i < ThreadCount; i++)
+		{
+			RenderThreads.push_back(std::thread(ThreadTaskWorker));
+		}
 
-	int step = sizeof(bitcolor) / sizeof(Pixel) / ThreadCount;
+		// Wait until all threads finish their work of current sample
+		for (auto& Thread : RenderThreads)
+		{
+			Thread.join();
+		}
 
-	std::vector<std::thread> RenderThreads;
+		//return;
+	}
+
 	static const int TotalSamplesNum = 500;
 
 	auto StartTime = std::chrono::system_clock::now();
 
 	for (int Sample = 0; Sample < TotalSamplesNum; Sample++)
 	{
+		std::vector<std::thread> RenderThreads;
+
+		// Split rendering area to tasks
+		for (int i = 0; i < bitmapHeight; i++)
+		{
+			g_TaskQueue.AddTask(RenderThreadTask(i * bitmapWidth, (i + 1) * bitmapWidth - 1, RenderOption()));
+		}
+		
 		for (int i = 0; i < ThreadCount; i++)
 		{
 #if 1
-			RenderThreads.push_back(std::thread(ThreadWorker_Render, i * step, (i + 1) * step, 10, RenderOption()));
+			RenderThreads.push_back(std::thread(ThreadTaskWorker));
 #else
 			ThreadWorker_Render(i * step, (i + 1) * step);
 			PresentRenderBuffer(g_DeviceContext);
@@ -368,8 +426,6 @@ void UpdateBitmapPixels()
 		{
 			Thread.join();
 		}
-
-		RenderThreads.clear();
 
 		auto CurrentTime = std::chrono::system_clock::now();
 		auto ElapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(CurrentTime - StartTime);
