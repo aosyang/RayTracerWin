@@ -6,6 +6,9 @@
 
 #include "RayTracerScene.h"
 #include "Math.h"
+#include "Platform.h"
+
+#define USE_LIGHTS 0
 
 LightData GSceneLights[] =
 {
@@ -161,7 +164,7 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
 	return FinalColor;
 }
 
-RVec3 RayTracerScene::CalculateLightColor(const LightData* InLight, const RayHitResult &InHitResult, const RVec3& InSurfaceColor)
+RVec3 RayTracerScene::CalculateLightColor(const LightData* InLight, const RayHitResult &InHitResult, const RVec3& InSurfaceColor) const
 {
 	RVec3 LightDirection = InLight->PositionOrDirection;
 	float dist = 0.0f;

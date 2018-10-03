@@ -56,15 +56,18 @@ public:
 	// Notify about exiting the program, all function should stop
 	void NotifyTerminatingProgram();
 
+	// Check if program is about to exit
 	bool IsTerminatingProgram() const;
 
+	// Run the ray tracing along a ray and get the color
 	RVec3 RayTrace(const RRay& InRay, int MaxBounceTimes = 10, const RenderOption& InOption = RenderOption()) const;
 
 protected:
-	RVec3 CalculateLightColor(const LightData* InLight, const RayHitResult &InHitResult, const RVec3& InSurfaceColor);
+	RVec3 CalculateLightColor(const LightData* InLight, const RayHitResult &InHitResult, const RVec3& InSurfaceColor) const;
 
 private:
 	std::vector<unique_ptr<RShape>> SceneShapes;
 
+	// State of program exiting
 	std::atomic<bool> bExiting;
 };

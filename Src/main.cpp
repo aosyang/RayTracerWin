@@ -26,8 +26,6 @@
 #include <vector>
 #include <chrono>
 
-#define USE_LIGHTS 0
-
 Pixel bitcolor[bitmapWidth * bitmapHeight];
 
 struct AccumulatePixel

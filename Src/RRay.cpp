@@ -84,7 +84,7 @@ bool RRay::TestIntersectionWithPlane(const RVec3& PlaneNormal, const RVec3& Poin
 	return false;
 }
 
-bool RRay::TestAabbIntersection(const RAabb& aabb, float* t/*=nullptr*/) const
+bool RRay::TestIntersectionWithAabb(const RAabb& aabb, float* t/*=nullptr*/) const
 {
     if (!aabb.IsValid())
         return false;

@@ -16,4 +16,6 @@ typedef unsigned int UINT32;
 
 #define PLATFORM_WIN32 1
 
+#include <windows.h>
+
 #endif

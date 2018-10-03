@@ -17,13 +17,16 @@ using std::unique_ptr;
 class RShape
 {
 public:
-	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const { return false; }
+	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const;
 
 	// Assign material to the shape
 	void SetMaterial(RMaterial Material);
 
 	// Get material of the shape
 	const RMaterial& GetMaterial() const;
+
+	// Whether to run aabb culling on this shape
+	virtual bool IsCulling() const { return true; }
     
 protected:
 	// World bounding box of the shape
@@ -66,6 +69,8 @@ public:
 	static unique_ptr<RShape> Create(const RVec3& InNormal, const RVec3& InPoint) { return std::make_unique<RPlane>(InNormal, InPoint); }
 
 	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const override;
+
+	virtual bool IsCulling() const override;
 };
 
 // Capsule
