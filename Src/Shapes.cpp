@@ -5,6 +5,16 @@
 //=============================================================================
 #include "Shapes.h"
 
+void RShape::SetMaterial(RMaterial Material)
+{
+	ShapeMaterial = Material;
+}
+
+const RMaterial& RShape::GetMaterial() const
+{
+	return ShapeMaterial;
+}
+
 bool RSphere::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= nullptr*/) const
 {
     if (!InRay.TestAabbIntersection(Aabb))

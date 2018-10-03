@@ -1,0 +1,70 @@
+//=============================================================================
+// RayTracerScene.h by Shiyang Ao, 2018 All Rights Reserved.
+//
+// 
+//=============================================================================
+
+#pragma once
+
+#include "Shapes.h"
+#include "Light.h"
+
+#include <vector>
+#include <memory>
+#include <atomic>
+
+using std::unique_ptr;
+
+
+// Types of shapes used for ray tracing
+enum EShape
+{
+	ST_Sphere,
+	ST_Plane,
+};
+
+enum EMaterial
+{
+	MT_Emissive = 1 << 0,
+	MT_Diffuse = 1 << 1,
+	MT_Reflective = 1 << 2,
+};
+
+struct RenderOption
+{
+	bool UseBaseColor;
+
+	RenderOption()
+		: UseBaseColor(false)
+	{}
+};
+
+// Data structure of a shape in the scene
+struct ShapeData
+{
+	RShape*	Shape;
+};
+
+class RayTracerScene
+{
+public:
+	RayTracerScene();
+
+	// Add a shape to scene
+	void AddShape(unique_ptr<RShape> Shape, RMaterial Material = RMaterial());
+
+	// Notify about exiting the program, all function should stop
+	void NotifyTerminatingProgram();
+
+	bool IsTerminatingProgram() const;
+
+	RVec3 RayTrace(const RRay& InRay, int MaxBounceTimes = 10, const RenderOption& InOption = RenderOption()) const;
+
+protected:
+	RVec3 CalculateLightColor(const LightData* InLight, const RayHitResult &InHitResult, const RVec3& InSurfaceColor);
+
+private:
+	std::vector<unique_ptr<RShape>> SceneShapes;
+
+	std::atomic<bool> bExiting;
+};

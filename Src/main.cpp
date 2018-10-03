@@ -19,6 +19,7 @@
 #include "Math.h"
 #include "ColorBuffer.h"
 #include "Shapes.h"
+#include "RayTracerScene.h"
 
 #include "ThreadTaskQueue.h"
 
@@ -53,29 +54,6 @@ struct AccumulatePixel
 AccumulatePixel accuBuffer[bitmapWidth * bitmapHeight];
 RenderWindow g_RenderWindow;
 
-// Types of shapes used for ray tracing
-enum EShape
-{
-	ST_Sphere,
-	ST_Plane,
-};
-
-enum EMaterial
-{
-	MT_Emissive		= 1 << 0,
-	MT_Diffuse		= 1 << 1,
-	MT_Reflective	= 1 << 2,
-};
-
-struct RenderOption
-{
-	bool UseBaseColor;
-
-	RenderOption()
-		: UseBaseColor(false)
-	{}
-};
-
 struct RenderThreadTask
 {
 	RenderThreadTask()
@@ -96,211 +74,26 @@ struct RenderThreadTask
 
 ThreadTaskQueue<RenderThreadTask> g_TaskQueue;
 
-// Data structure of a shape in the scene
-struct ShapeData
+RayTracerScene g_Scene;
+
+void SetupScene()
 {
-	RShape*	Shape;
-	RVec3	Color;
-	bool	UseCheckerboardPattern;
-	int		MaterialFlags;
-};
-
-ShapeData GSceneShapes[] =
-{
-	{ RSphere::Create(RVec3(0.0f, -1.0f, 2.0f) ,   1.0f), RVec3(1.0f, 0.5f, 0.1f), false, MT_Diffuse | MT_Reflective },
-	//{ RSphere::Create(RVec3(1.5f, 0.0f, 2.0f) ,    0.5f), RVec3(0.0f, 10.0f, 10.0f), false, MT_Emissive/*MT_Reflective*/ },
-	{ RSphere::Create(RVec3(1.2f, 1.0f, 3.0f) ,    0.5f), RVec3(0.1f, 1.0f, 0.2f), false, MT_Diffuse },
-	{ RSphere::Create(RVec3(0.2f, 1.2f, 1.0f) ,    0.5f), RVec3(0.5f, 0.0f, 0.2f), false, MT_Diffuse | MT_Reflective },
-	{ RSphere::Create(RVec3(-2.8f, 1.2f, 4.0f) ,   1.5f), RVec3(0.95f, 0.75f, 0.1f), false, MT_Diffuse | MT_Reflective/*MT_Reflective*/ },
-	{ RSphere::Create(RVec3(0.0f, -5.0f, 0.0f) ,    0.5f), RVec3(100.0f, 100.0f, 120.0f), false, MT_Emissive },	// Ceiling light
-	//{ RSphere::Create(RVec3(0.0f, 0.0f, -1005.0f) , 1000.0f), RVec3(0.0f, 0.5f, 0.75f), MT_Emissive },
-	//{ RSphere::Create(RVec3(1055.0f, 0.0f, 0.0f) , 1000.0f), 0xFF007FBF, MT_Emissive },
-	//{ RSphere::Create(RVec3(-1055.0f, 0.0f, 0.0f) , 1000.0f), 0xFF007FBF, MT_Emissive },
-
-	{ RCapsule::Create(RVec3(1.5f, 0.0f, 0.0f), RVec3(2.0f, 1.0f, 0.0f), 0.5f), RVec3(0.25f, 0.75f, 0.6f), false, MT_Diffuse | MT_Reflective },
-
-	{ RPlane::Create(RVec3(0.0f, -1.0f, 0.0f) ,    RVec3(0.0f, 2.5f, 0.0f)), RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse },			// Ground
-	{ RPlane::Create(RVec3(0.0f, 1.0f, 0.0f) ,    RVec3(0.0f, -5.0f, 0.0f)), RVec3(1.2f, 1.2f, 1.5f), false, MT_Diffuse },			// Ceiling / Sky light plane
-	{ RPlane::Create(RVec3(0.0f, 0.0f, -1.0f) ,    RVec3(0.0f, 0.0f, 5.0f)), RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse },			// Back wall
-	{ RPlane::Create(RVec3(0.0f, 0.0f, 1.0f) ,    RVec3(0.0f, 0.0f, -10.0f)), RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse },
-	{ RPlane::Create(RVec3(-1.0f, 0.0f, 0.0f) ,    RVec3(5.0f, 0.0f, 0.0f)), RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse },			// Right wall
-	{ RPlane::Create(RVec3(1.0f, 0.0f, 0.0f) ,    RVec3(-5.0f, 0.0f, 0.0f)), RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse },			// Left wall
-	//{ RVec3(-1005.0f, 0.0f, 0.0f) , 1000.0f, 0xFFFF0000, false },
-	//{ RVec3(1005.0f, 0.0f, 0.0f) , 1000.0f, 0xFF7FBF00, false },
-	//{ RVec3(0.0f, 0.0f, -995.0f) , 1000.0f, 0xFFFF0000, false },
-};
-
-LightData GSceneLights[] =
-{
-	//{ LT_Directional,	RVec3(0.0f, -1.0f, 0.0f), RVec3(1, 1, 1) },
-	{ LT_Point,			RVec3(0.0f, -4.5f, 0.0f), RVec3(1, 1, 1) },
-};
-
-
-RVec3 CalculateLightColor(const LightData* InLight, const RayHitResult &InHitResult, const RVec3& InSurfaceColor)
-{
-	RVec3 LightDirection = InLight->PositionOrDirection;
-	float dist = 0.0f;
-
-	switch (InLight->Type)
-	{
-	case LT_Point:
-		{
-			RVec3 LightPosition = InLight->PositionOrDirection;
-			LightDirection = (LightPosition - InHitResult.HitPosition).GetNormalizedVec3();
-			dist = (InHitResult.HitPosition - LightPosition).Magnitude();
-		}
-		break;
-
-	case LT_Directional:
-		LightDirection = InLight->PositionOrDirection;
-		dist = 1000.0f;
-		break;
-	}
-
-	RRay ShadowRay(InHitResult.HitPosition + LightDirection * 0.001f, LightDirection, dist);
-	bool IsInShadow = false;
-
-	// Check if light path has been blocked by any shapes
-	for (int i = 0; i < ARRAYSIZE(GSceneShapes); i++)
-	{
-		bool hit = GSceneShapes[i].Shape->TestRayIntersection(ShadowRay);
-
-		if (hit)
-		{
-			IsInShadow = true;
-			break;
-		}
-	}
-
-	if (IsInShadow)
-	{
-		// Surface is in shadow, no light contribution
-		return RVec3::Zero();
-	}
-	else
-	{
-        float ldp = Math::Max(0.0f, InHitResult.HitNormal.Dot(LightDirection));
-		return InSurfaceColor * ldp;
-	}
-}
-
-RVec3 RayTrace(const RRay& InRay, int MaxBounceTimes = 10, const RenderOption& InOption = RenderOption())
-{
-	RRay TestRay = InRay;
-
-	if (MaxBounceTimes == 0)
-		return RVec3::Zero();
-
-	RVec3 FinalColor = RVec3::Zero();
-
-	RayHitResult result;
-	ShapeData* hitShape = nullptr;
-
-	// Get nearest hit point for this ray
-	for (int i = 0; i < ARRAYSIZE(GSceneShapes); i++)
-	{
-		bool hit = GSceneShapes[i].Shape->TestRayIntersection(TestRay, &result);
-
-		if (hit)
-		{
-			// Shorten distance of current testing ray
-			TestRay.Distance = result.Distance;
-			hitShape = &GSceneShapes[i];
-		}
-	}
-
-	if (hitShape)
-	{
-		float DiffuseRatio = 1.0f;
-
-		if (hitShape->MaterialFlags & MT_Reflective)
-		{
-			float RemainingDistance = InRay.Distance - result.Distance;
-			if (RemainingDistance > 0)
-			{
-				const float ReflectiveRatio = 0.5f;
-				DiffuseRatio = 1.0f - ReflectiveRatio;
-
-				if (!InOption.UseBaseColor)
-				{
-					if (InRay.Direction.Dot(result.HitNormal) < 0)
-					{
-						RVec3 newDir = InRay.Direction.Reflect(result.HitNormal);
-
-						RRay reflRay(result.HitPosition + newDir * 0.001f, newDir, RemainingDistance);
-
-						FinalColor += RayTrace(reflRay, MaxBounceTimes - 1, InOption) * ReflectiveRatio;
-					}
-				}
-			}
-		}
-
-		RVec3 SurfaceColor = hitShape->Color;
-
-		// Make checkerboard pattern
-		if (hitShape->UseCheckerboardPattern)
-		{
-			bool color = false;
-			float fx = result.HitPosition.x * 0.2f;
-			float fy = result.HitPosition.y * 0.2f;
-			float fz = result.HitPosition.z * 0.2f;
-
-			if (fx - floorf(fx) > 0.5f)
-				color = !color;
-			if (fz - floorf(fz) > 0.5f)
-				color = !color;
-			if (fy - floorf(fy) > 0.5f)
-				color = !color;
-
-			if (!color)
-				SurfaceColor *= 0.5f;
-		}
-
-		if (hitShape->MaterialFlags & MT_Diffuse)
-		{
-			float RemainingDistance = InRay.Distance - result.Distance;
-			if (RemainingDistance > 0)
-			{
-				float DotProductResult = 1.0f;
-				RVec3 DiffuseColor = RVec3(1.0f, 1.0f, 1.0f);
-
-				if (!InOption.UseBaseColor)
-				{
-
-					RVec3 DiffuseReflectionDirection = RMath::RandomHemisphereDirection(result.HitNormal);
-					RRay DiffuseRay(result.HitPosition + DiffuseReflectionDirection * 0.001f, DiffuseReflectionDirection, RemainingDistance);
-
-                    DotProductResult = Math::Max(0.0f, result.HitNormal.Dot(DiffuseReflectionDirection));
-
-					DiffuseColor = RayTrace(DiffuseRay, MaxBounceTimes - 1, InOption);
-
-#if (USE_LIGHTS == 1)
-					// Apply diffuse lighting
-					for (int i = 0; i < ARRAYSIZE(GSceneLights); i++)
-					{
-						LightData* l = &GSceneLights[i];
-						FinalColor += CalculateLightColor(l, result, SurfaceColor) * DiffuseRatio;
-					}
-#endif
-				}
-
-				FinalColor += SurfaceColor * DiffuseColor * DotProductResult * DiffuseRatio;
-			}
-		}
-
-		if (hitShape->MaterialFlags & MT_Emissive)
-		{
-			FinalColor += SurfaceColor;
-		}
-	}
-
-	return FinalColor;
+	g_Scene.AddShape(RSphere::Create(RVec3(0.0f, -1.0f, 2.0f), 1.0f), RMaterial(RVec3(1.0f, 0.5f, 0.1f), false, MT_Diffuse | MT_Reflective));
+	g_Scene.AddShape(RSphere::Create(RVec3(1.2f, 1.0f, 3.0f), 0.5f), RMaterial(RVec3(0.1f, 1.0f, 0.2f), false, MT_Diffuse));
+	g_Scene.AddShape(RSphere::Create(RVec3(0.2f, 1.2f, 1.0f), 0.5f), RMaterial(RVec3(0.5f, 0.0f, 0.2f), false, MT_Diffuse | MT_Reflective));
+	g_Scene.AddShape(RSphere::Create(RVec3(-2.8f, 1.2f, 4.0f), 1.5f), RMaterial(RVec3(0.95f, 0.75f, 0.1f), false, MT_Diffuse | MT_Reflective/*MT_Reflective*/));
+	g_Scene.AddShape(RSphere::Create(RVec3(0.0f, -5.0f, 0.0f), 0.5f), RMaterial(RVec3(100.0f, 100.0f, 120.0f), false, MT_Emissive));					// Ceiling light
+	g_Scene.AddShape(RCapsule::Create(RVec3(1.5f, 0.0f, 0.0f), RVec3(2.0f, 1.0f, 0.0f), 0.5f), RMaterial(RVec3(0.25f, 0.75f, 0.6f), false, MT_Diffuse | MT_Reflective));
+	g_Scene.AddShape(RPlane::Create(RVec3(0.0f, -1.0f, 0.0f), RVec3(0.0f, 2.5f, 0.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));			// Ground
+	g_Scene.AddShape(RPlane::Create(RVec3(0.0f, 1.0f, 0.0f), RVec3(0.0f, -5.0f, 0.0f)), RMaterial(RVec3(1.2f, 1.2f, 1.5f), false, MT_Diffuse));			// Ceiling / Sky light plane
+	g_Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, -1.0f), RVec3(0.0f, 0.0f, 5.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));			// Back wall
+	g_Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, 1.0f), RVec3(0.0f, 0.0f, -10.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));
+	g_Scene.AddShape(RPlane::Create(RVec3(-1.0f, 0.0f, 0.0f), RVec3(5.0f, 0.0f, 0.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));			// Right wall
+	g_Scene.AddShape(RPlane::Create(RVec3(1.0f, 0.0f, 0.0f), RVec3(-5.0f, 0.0f, 0.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));			// Left wall
 }
 
 void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const RenderOption& InOption = RenderOption())
 {
-//#pragma omp parallel for schedule(dynamic, 1)
 	for (int PixelIndex = begin; PixelIndex < end; PixelIndex++)
 	{
 		int x, y;
@@ -334,7 +127,7 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 
 			RVec3 Dir(dx + offset_x, dy + offset_y, 0.5f);
 			RRay ray(RVec3(0, 0, -5), Dir.GetNormalizedVec3(), 1000.0f);
-			c += RayTrace(ray, MaxBounceCount, InOption);
+			c += g_Scene.RayTrace(ray, MaxBounceCount, InOption);
 		}
 
 		c /= 4.0f;
@@ -359,9 +152,9 @@ void ThreadTaskWorker()
 	RenderThreadTask Task;
 
 	// Run until all tasks are finished
-	while (g_TaskQueue.GetTask(&Task))
+	while (g_TaskQueue.GetTask(&Task) && !g_Scene.IsTerminatingProgram())
 	{
-		ThreadWorker_Render(Task.Start, Task.End, 10, Task.Option);
+		ThreadWorker_Render(Task.Start, Task.End, 3, Task.Option);
 	}
 }
 
@@ -433,15 +226,18 @@ void UpdateBitmapPixels()
 		int ElapsedTimeSec = (int)(ElapsedTime.count() / 1000);
 		int RemainingTimeSec = (int)(RemainingTime.count() / 1000);
 
-		char buf[1024];
-		sprintf(buf, "S: [%d/%d] | T: [%ds/%ds]", Sample + 1, TotalSamplesNum, ElapsedTimeSec, RemainingTimeSec);
 #if (PLATFORM_OSX)
-        printf("%s\n", buf);
+        printf("S: [%d/%d] | T: [%ds/%ds]", Sample + 1, TotalSamplesNum, ElapsedTimeSec, RemainingTimeSec);
 #else
-        char strTitle[1024];
-        sprintf(strTitle, "RayTracer - %s", buf);
-		g_RenderWindow.SetTitle(strTitle);
+		char buf[1024];
+		sprintf_s(buf, sizeof(buf), "RayTracer - S: [%d/%d] | T: [%ds/%ds]", Sample + 1, TotalSamplesNum, ElapsedTimeSec, RemainingTimeSec);
+		g_RenderWindow.SetTitle(buf);
 #endif  // PLATFORM_OSX
+
+		if (g_Scene.IsTerminatingProgram())
+		{
+			break;
+		}
 	}
 }
 
@@ -458,13 +254,16 @@ int main(int argc, char *argv[])
 	g_RenderWindow.Create(bitmapWidth, bitmapHeight);
 	g_RenderWindow.SetRenderBufferParameters(bitmapWidth, bitmapHeight, bitcolor);
 
+	SetupScene();
+
     // Begin ray tracing render thread
 	std::thread RenderThread(UpdateBitmapPixels);
-	RenderThread.detach();
 
 	g_RenderWindow.RunWindowLoop();
-
 	g_RenderWindow.Destroy();
+	g_Scene.NotifyTerminatingProgram();
+
+	RenderThread.join();
 
 	return 0;
 }

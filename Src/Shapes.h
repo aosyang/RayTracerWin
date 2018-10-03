@@ -7,15 +7,30 @@
 
 #include "RVector.h"
 #include "RRay.h"
+#include "Material.h"
+
+#include <memory>
+
+using std::unique_ptr;
 
 // Base shape class
 class RShape
 {
 public:
 	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const { return false; }
+
+	// Assign material to the shape
+	void SetMaterial(RMaterial Material);
+
+	// Get material of the shape
+	const RMaterial& GetMaterial() const;
     
 protected:
+	// World bounding box of the shape
     RAabb Aabb;
+
+	// Material used by the shape
+	RMaterial ShapeMaterial;
 };
 
 
@@ -32,7 +47,7 @@ public:
         Aabb.ExpandBySphere(Center, Radius);
     }
 
-	static RShape* Create(const RVec3& InCenter, float InRadius) { return new RSphere(InCenter, InRadius); }
+	static unique_ptr<RSphere> Create(const RVec3& InCenter, float InRadius) { return std::make_unique<RSphere>(InCenter, InRadius); }
 
 	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const override;
 };
@@ -48,7 +63,7 @@ public:
 		: Normal(InNormal), Point(InPoint)
 	{}
 
-	static RShape* Create(const RVec3& InNormal, const RVec3& InPoint) { return new RPlane(InNormal, InPoint); }
+	static unique_ptr<RShape> Create(const RVec3& InNormal, const RVec3& InPoint) { return std::make_unique<RPlane>(InNormal, InPoint); }
 
 	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const override;
 };
@@ -68,7 +83,7 @@ public:
         Aabb.ExpandBySphere(End, Radius);
     }
 
-	static RShape* Create(const RVec3& InStart, const RVec3& InEnd, float InRadius) { return new RCapsule(InStart, InEnd, InRadius); }
+	static unique_ptr<RShape> Create(const RVec3& InStart, const RVec3& InEnd, float InRadius) { return std::make_unique<RCapsule>(InStart, InEnd, InRadius); }
 
 	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const override;
 
