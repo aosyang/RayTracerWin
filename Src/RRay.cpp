@@ -134,3 +134,66 @@ bool RRay::TestIntersectionWithAabb(const RAabb& aabb, float* t/*=nullptr*/) con
     return false;
 }
 
+bool RRay::TestIntersectionWithTriangle(const RVec3 TriPoints[3], RayHitResult* result /*= nullptr*/) const
+{
+	RVec3 EndPoint = Origin + Direction * Distance;
+
+	RVec3 p1p0 = (TriPoints[1] - TriPoints[0]).GetNormalizedVec3();
+	RVec3 p2p0 = (TriPoints[2] - TriPoints[0]).GetNormalizedVec3();
+	const RVec3 Normal = p1p0.Cross(p2p0);
+	const RVec3& Point = TriPoints[0];
+
+	if (RVec3::Dot(Origin, Normal) - RVec3::Dot(Point, Normal) < 0)
+	{
+		return false;
+	}
+
+	if (RVec3::Dot(EndPoint, Normal) - RVec3::Dot(Point, Normal) > 0)
+	{
+		return false;
+	}
+
+	if ((RVec3::Dot(Origin, Normal) - RVec3::Dot(Point, Normal) < 0) &&
+		(RVec3::Dot(EndPoint, Normal) - RVec3::Dot(Point, Normal) < 0))
+	{
+		return false;
+	}
+
+	if ((RVec3::Dot(Origin, Normal) - RVec3::Dot(Point, Normal) > 0) &&
+		(RVec3::Dot(EndPoint, Normal) - RVec3::Dot(Point, Normal) > 0))
+	{
+		return false;
+	}
+
+	float d0 = RVec3::Dot(Normal, Origin);
+	float d1 = RVec3::Dot(Normal, Point);
+	float d2 = d0 - d1;
+
+	RVec3 l = EndPoint - Origin;
+	float d3 = RVec3::Dot(Normal, l);
+
+	float df = -(d2 / d3);
+
+	RVec3 cp = Origin + l * df;
+
+	for (int i = 0; i < 3; i++)
+	{
+		RVec3 edge = TriPoints[(i + 1) % 3] - TriPoints[i];
+		RVec3 edge_normal = edge.Cross(Normal);
+
+		if (RVec3::Dot(edge_normal, cp - TriPoints[i]) > 0)
+		{
+			return false;
+		}
+	}
+
+	if (result)
+	{
+		result->HitPosition = cp;
+		result->HitNormal = Normal;
+		result->Distance = l.Magnitude();
+	}
+
+	return true;
+}
+

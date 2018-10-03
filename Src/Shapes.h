@@ -17,7 +17,7 @@ using std::unique_ptr;
 class RShape
 {
 public:
-	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const;
+	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const { return false; }
 
 	// Assign material to the shape
 	void SetMaterial(RMaterial Material);
@@ -26,7 +26,10 @@ public:
 	const RMaterial& GetMaterial() const;
 
 	// Whether to run aabb culling on this shape
-	virtual bool IsCulling() const { return true; }
+	virtual bool HasCullingBounds() const { return true; }
+
+	// Get the bounds of this shape for culling
+	const RAabb& GetBounds() const;
     
 protected:
 	// World bounding box of the shape
@@ -70,7 +73,7 @@ public:
 
 	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const override;
 
-	virtual bool IsCulling() const override;
+	virtual bool HasCullingBounds() const override;
 };
 
 // Capsule
@@ -94,4 +97,25 @@ public:
 
 protected:
 	bool TestRayCylinderIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const;
+};
+
+class RTriangle : public RShape
+{
+public:
+	RVec3 Points[3];
+
+	RTriangle(const RVec3& p0, const RVec3& p1, const RVec3& p2)
+	{
+		Points[0] = p0;
+		Points[1] = p1;
+		Points[2] = p2;
+
+		Aabb.Expand(p0);
+		Aabb.Expand(p1);
+		Aabb.Expand(p2);
+	}
+
+	static unique_ptr<RShape> Create(const RVec3& p0, const RVec3& p1, const RVec3& p2) { return std::make_unique<RTriangle>(p0, p1, p2); }
+
+	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /* = nullptr */) const override;
 };

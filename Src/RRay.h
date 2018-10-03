@@ -28,10 +28,17 @@ public:
 	RRay(const RVec3& _origin, const RVec3& _dir, float _dist);
 	RRay(const RVec3& _start, const RVec3& _end);
 
+	// Ray-sphere intersection test
 	bool TestIntersectionWithSphere(const RVec3& SphereCenter, float SphereRadius, RayHitResult* result = nullptr) const;
+
+	// Ray-plane intersection test
 	bool TestIntersectionWithPlane(const RVec3& PlaneNormal, const RVec3& PointOnPlane, RayHitResult* result = nullptr) const;
 
+	// Ray-aabb intersection test
 	bool TestIntersectionWithAabb(const RAabb& aabb, float* t = nullptr) const;
+
+	// Ray-triangle intersection test
+	bool TestIntersectionWithTriangle(const RVec3 TriPoints[3], RayHitResult* result = nullptr) const;
 };
 
 #endif

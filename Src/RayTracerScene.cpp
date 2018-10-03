@@ -61,13 +61,16 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
 	// Get nearest hit point for this ray
 	for (auto& Shape : SceneShapes)
 	{
-		bool hit = Shape->TestRayIntersection(TestRay, &result);
-
-		if (hit)
+		if (!Shape->HasCullingBounds() || TestRay.TestIntersectionWithAabb(Shape->GetBounds()))
 		{
-			// Shorten distance of current testing ray
-			TestRay.Distance = result.Distance;
-			HitShapeIndex = Index;
+			bool hit = Shape->TestRayIntersection(TestRay, &result);
+
+			if (hit)
+			{
+				// Shorten distance of current testing ray
+				TestRay.Distance = result.Distance;
+				HitShapeIndex = Index;
+			}
 		}
 
 		Index++;
@@ -191,12 +194,15 @@ RVec3 RayTracerScene::CalculateLightColor(const LightData* InLight, const RayHit
 	// Check if light path has been blocked by any shapes
 	for (auto& Shape : SceneShapes)
 	{
-		bool hit = Shape->TestRayIntersection(ShadowRay);
-
-		if (hit)
+		if (!Shape->HasCullingBounds() || ShadowRay.TestIntersectionWithAabb(Shape->GetBounds()))
 		{
-			IsInShadow = true;
-			break;
+			bool hit = Shape->TestRayIntersection(ShadowRay);
+
+			if (hit)
+			{
+				IsInShadow = true;
+				break;
+			}
 		}
 	}
 

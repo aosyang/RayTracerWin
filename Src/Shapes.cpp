@@ -5,16 +5,6 @@
 //=============================================================================
 #include "Shapes.h"
 
-bool RShape::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= nullptr*/) const
-{
-	if (IsCulling() && !InRay.TestIntersectionWithAabb(Aabb))
-	{
-		return false;
-	}
-
-	return true;
-}
-
 void RShape::SetMaterial(RMaterial Material)
 {
 	ShapeMaterial = Material;
@@ -25,13 +15,13 @@ const RMaterial& RShape::GetMaterial() const
 	return ShapeMaterial;
 }
 
+const RAabb& RShape::GetBounds() const
+{
+	return Aabb;
+}
+
 bool RSphere::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= nullptr*/) const
 {
-    if (!RShape::TestRayIntersection(InRay))
-    {
-        return false;
-    }
-
     return InRay.TestIntersectionWithSphere(Center, Radius, OutResult);
 }
 
@@ -40,7 +30,7 @@ bool RPlane::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= 
 	return InRay.TestIntersectionWithPlane(Normal, Point, OutResult);
 }
 
-bool RPlane::IsCulling() const
+bool RPlane::HasCullingBounds() const
 {
 	// Plane is infinite, never culls.
 	return false;
@@ -48,11 +38,6 @@ bool RPlane::IsCulling() const
 
 bool RCapsule::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= nullptr*/) const
 {
-	if (!RShape::TestRayIntersection(InRay))
-	{
-		return false;
-	}
-
 	if (!TestRayCylinderIntersection(InRay, OutResult))
 	{
 		RayHitResult r1, r2;
@@ -142,4 +127,9 @@ bool RCapsule::TestRayCylinderIntersection(const RRay& InRay, RayHitResult* OutR
 	}
 
 	return true;
+}
+
+bool RTriangle::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /* = nullptr */) const
+{
+	return InRay.TestIntersectionWithTriangle(Points, OutResult);
 }
