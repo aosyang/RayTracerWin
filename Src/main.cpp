@@ -113,7 +113,7 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 
 		RVec3 c = RVec3::Zero();
 
-		// Randomly sample 4x4 nearby pixels for antialiasing
+		// Randomly sample 2x2 nearby pixels for antialiasing
 		for (int i = 0; i < 4; i++)
 		{
 			float offset_x = ox[i];
@@ -152,7 +152,7 @@ void ThreadTaskWorker()
 	// Run until all tasks are finished
 	while (g_TaskQueue.GetTask(&Task) && !g_Scene.IsTerminatingProgram())
 	{
-		ThreadWorker_Render(Task.Start, Task.End, 3, Task.Option);
+		ThreadWorker_Render(Task.Start, Task.End, 4, Task.Option);
 	}
 }
 
