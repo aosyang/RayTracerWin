@@ -85,10 +85,21 @@ RMeshShape::RMeshShape(const char* Filename)
 
 		FaceNormals.push_back(Normal);
 	}
+
+	Spatial = std::make_unique<KdTree>();
+	Spatial->Build(Points.data(), Indices.data(), (int)Indices.size());
+
 }
 
 bool RMeshShape::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= nullptr*/) const
 {
+#if 1
+	if (Spatial)
+	{
+		return Spatial->TestRayIntersection(InRay, Points.data(), OutResult);
+	}
+	return false;
+#else
 	RRay TestRay = InRay;
 	bool bResult = false;
 
@@ -111,4 +122,5 @@ bool RMeshShape::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult 
 	}
 
 	return bResult;
+#endif
 }

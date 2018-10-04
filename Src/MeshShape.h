@@ -7,6 +7,7 @@
 #pragma once
 
 #include "Shapes.h"
+#include "KdTree.h"
 
 #include <vector>
 
@@ -23,4 +24,6 @@ private:
 	std::vector<RVec3>		Points;
 	std::vector<RVec3>		FaceNormals;
 	std::vector<int>		Indices;
+
+	unique_ptr<KdTree>		Spatial;
 };
