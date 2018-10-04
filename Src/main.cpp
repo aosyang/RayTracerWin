@@ -19,6 +19,7 @@
 #include "Math.h"
 #include "ColorBuffer.h"
 #include "Shapes.h"
+#include "MeshShape.h"
 #include "RayTracerScene.h"
 
 #include "ThreadTaskQueue.h"
@@ -88,6 +89,8 @@ void SetupScene()
 	g_Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, 1.0f), RVec3(0.0f, 0.0f, -10.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));
 	g_Scene.AddShape(RPlane::Create(RVec3(-1.0f, 0.0f, 0.0f), RVec3(5.0f, 0.0f, 0.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));			// Right wall
 	g_Scene.AddShape(RPlane::Create(RVec3(1.0f, 0.0f, 0.0f), RVec3(-5.0f, 0.0f, 0.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));			// Left wall
+
+	g_Scene.AddShape(RMeshShape::Create("../Data/TorusKnot.obj"), RMaterial(RVec3(1.0f, 1.0f, 0.5f), false, MT_Diffuse | MT_Reflective));
 }
 
 void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const RenderOption& InOption = RenderOption())

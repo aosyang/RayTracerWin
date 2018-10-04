@@ -155,6 +155,11 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
 				}
 
 				FinalColor += SurfaceColor * DiffuseColor * DotProductResult * DiffuseRatio;
+
+				if (InOption.UseBaseColor)
+				{
+					FinalColor *= RVec3::Dot(result.HitNormal, RVec3(0, -1, 0)) * 0.5f + 0.5f;
+				}
 			}
 		}
 

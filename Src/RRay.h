@@ -39,6 +39,9 @@ public:
 
 	// Ray-triangle intersection test
 	bool TestIntersectionWithTriangle(const RVec3 TriPoints[3], RayHitResult* result = nullptr) const;
+
+	// Ray-triangle intersection test
+	bool TestIntersectionWithTriangleAndFaceNormal(const RVec3 TriPoints[3], const RVec3& Normal, RayHitResult* result = nullptr) const;
 };
 
 #endif

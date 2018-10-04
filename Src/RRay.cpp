@@ -136,11 +136,17 @@ bool RRay::TestIntersectionWithAabb(const RAabb& aabb, float* t/*=nullptr*/) con
 
 bool RRay::TestIntersectionWithTriangle(const RVec3 TriPoints[3], RayHitResult* result /*= nullptr*/) const
 {
+	RVec3 p0p1 = TriPoints[1] - TriPoints[0];
+	RVec3 p0p2 = TriPoints[2] - TriPoints[0];
+	const RVec3 Normal = p0p1.Cross(p0p2).GetNormalizedVec3();
+
+	return TestIntersectionWithTriangleAndFaceNormal(TriPoints, Normal, result);
+}
+
+bool RRay::TestIntersectionWithTriangleAndFaceNormal(const RVec3 TriPoints[3], const RVec3& Normal, RayHitResult* result /*= nullptr*/) const
+{
 	RVec3 EndPoint = Origin + Direction * Distance;
 
-	RVec3 p1p0 = (TriPoints[1] - TriPoints[0]).GetNormalizedVec3();
-	RVec3 p2p0 = (TriPoints[2] - TriPoints[0]).GetNormalizedVec3();
-	const RVec3 Normal = p1p0.Cross(p2p0);
 	const RVec3& Point = TriPoints[0];
 
 	if (RVec3::Dot(Origin, Normal) - RVec3::Dot(Point, Normal) < 0)
@@ -191,7 +197,7 @@ bool RRay::TestIntersectionWithTriangle(const RVec3 TriPoints[3], RayHitResult* 
 	{
 		result->HitPosition = cp;
 		result->HitNormal = Normal;
-		result->Distance = l.Magnitude();
+		result->Distance = (l * df).Magnitude();
 	}
 
 	return true;
