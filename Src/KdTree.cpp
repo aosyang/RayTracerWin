@@ -34,7 +34,7 @@ EAxis GetLargestAxisOfBounds(const RAabb& Bounds)
 	}
 }
 
-void KdNode::Build(const RVec3 Points[], const std::vector<TriangleIndex>& Triangles)
+void KdNode::Build(const RVec3 Points[], const std::vector<TriangleData>& Triangles)
 {
 	int NumTriangles = (int)Triangles.size();
 
@@ -65,8 +65,8 @@ void KdNode::Build(const RVec3 Points[], const std::vector<TriangleIndex>& Trian
 	}
 	NodeMidPoint /= (float)NumTriangles;
 
-	std::vector<TriangleIndex> LeftNodeTriangles;
-	std::vector<TriangleIndex> RightNodeTriangles;
+	std::vector<TriangleData> LeftNodeTriangles;
+	std::vector<TriangleData> RightNodeTriangles;
 	const EAxis Axis = GetLargestAxisOfBounds(Bounds);
 
 	for (int i = 0; i < NumTriangles; i++)
@@ -108,8 +108,8 @@ void KdNode::Build(const RVec3 Points[], const std::vector<TriangleIndex>& Trian
 	if (LeftNodeTriangles.size() == Triangles.size() || RightNodeTriangles.size() == Triangles.size())
 	{
 		const size_t half_size = Triangles.size() / 2;
-		LeftNodeTriangles = std::vector<TriangleIndex>(Triangles.begin(), Triangles.begin() + half_size);
-		RightNodeTriangles = std::vector<TriangleIndex>(Triangles.begin() + half_size, Triangles.end());
+		LeftNodeTriangles = std::vector<TriangleData>(Triangles.begin(), Triangles.begin() + half_size);
+		RightNodeTriangles = std::vector<TriangleData>(Triangles.begin() + half_size, Triangles.end());
 	}
 
 	if (LeftNodeTriangles.size() > 0)
@@ -125,7 +125,7 @@ void KdNode::Build(const RVec3 Points[], const std::vector<TriangleIndex>& Trian
 	}
 }
 
-bool KdNode::TestRayIntersection(RRay& TestRay, const RVec3 Points[], RayHitResult* OutResult /*= nullptr*/) const
+bool KdNode::TestRayIntersection(RRay& TestRay, const RVec3 Points[], RayHitResult* OutResult /*= nullptr*/, int* TriangleIndex /*= nullptr*/) const
 {
 	if (!TestRay.TestIntersectionWithAabb(Bounds))
 	{
@@ -137,13 +137,13 @@ bool KdNode::TestRayIntersection(RRay& TestRay, const RVec3 Points[], RayHitResu
 
 	if (Left)
 	{
-		bResult |= Left->TestRayIntersection(TestRay, Points, OutResult);
+		bResult |= Left->TestRayIntersection(TestRay, Points, OutResult, TriangleIndex);
 		bIsLeaf = false;
 	}
 
 	if (Right)
 	{
-		bResult |= Right->TestRayIntersection(TestRay, Points, OutResult);
+		bResult |= Right->TestRayIntersection(TestRay, Points, OutResult, TriangleIndex);
 		bIsLeaf = false;
 	}
 
@@ -165,6 +165,11 @@ bool KdNode::TestRayIntersection(RRay& TestRay, const RVec3 Points[], RayHitResu
 				*OutResult = HitResult;
 			}
 
+			if (TriangleIndex)
+			{
+				*TriangleIndex = Triangle.Index;
+			}
+
 			return true;
 		}
 
@@ -181,16 +186,26 @@ KdTree::KdTree()
 
 void KdTree::Build(const RVec3 Points[], const int Indices[], int NumIndices)
 {
-	const TriangleIndex* Triangles = reinterpret_cast<const TriangleIndex*>(Indices);
+	const TriangleData* Triangles = reinterpret_cast<const TriangleData*>(Indices);
 	const int NumTriangles = NumIndices / 3;
 
-	std::vector<TriangleIndex> TriangleIndices(Triangles, Triangles + NumTriangles);
+	std::vector<TriangleData> TriangleIndices;
+	for (int i = 0; i < NumTriangles; i++)
+	{
+		TriangleIndices.emplace_back(
+			Indices[i * 3],
+			Indices[i * 3 + 1],
+			Indices[i * 3 + 2],
+			i
+		);
+	}
+
 	RootNode = std::make_unique<KdNode>();
 
 	RootNode->Build(Points, TriangleIndices);
 }
 
-bool KdTree::TestRayIntersection(const RRay& InRay, const RVec3 Points[], RayHitResult* OutResult /*= nullptr*/) const
+bool KdTree::TestRayIntersection(const RRay& InRay, const RVec3 Points[], RayHitResult* OutResult /*= nullptr*/, int* TriangleIndex /*= nullptr*/) const
 {
 	if (RootNode == nullptr)
 	{
@@ -199,7 +214,7 @@ bool KdTree::TestRayIntersection(const RRay& InRay, const RVec3 Points[], RayHit
 
 	RRay TestRay = InRay;
 
-	return RootNode->TestRayIntersection(TestRay, Points, OutResult);
+	return RootNode->TestRayIntersection(TestRay, Points, OutResult, TriangleIndex);
 }
 
 RAabb KdTree::GetBounds() const

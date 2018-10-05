@@ -22,8 +22,10 @@ public:
 
 private:
 	std::vector<RVec3>		Points;
+	std::vector<RVec3>		Normals;
 	std::vector<RVec3>		FaceNormals;
-	std::vector<int>		Indices;
+	std::vector<int>		PointIndices;
+	std::vector<int>		NormalIndices;
 
 	unique_ptr<KdTree>		Spatial;
 };

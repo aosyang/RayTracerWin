@@ -5,6 +5,7 @@
 //=============================================================================
 
 #include "MeshShape.h"
+#include "Math.h"
 
 #include <fstream>
 #include <string>
@@ -23,12 +24,16 @@ static std::string GetLineKeyword(const std::string& Line)
 	return Line;
 }
 
-static int GetFirstNumericValue(const std::string& Line)
+static int GetNthNumericValue(int n, const std::string& Line)
 {
 	std::stringstream LineStream(Line);
-	int n;
-	LineStream >> n;
-	return n;
+	int value;
+	char dummy;
+	for (int i = 0; i <= n; i++)
+	{
+		LineStream >> value >> dummy;
+	}
+	return value;
 }
 
 RMeshShape::RMeshShape(const char* Filename)
@@ -56,6 +61,13 @@ RMeshShape::RMeshShape(const char* Filename)
 				Points.push_back(Vertex);
 				Aabb.Expand(Vertex);
 			}
+			else if (key == "vn")
+			{
+				std::stringstream LineStream(Line);
+				float n[3];
+				LineStream >> dummy >> n[0] >> n[1] >> n[2];
+				Normals.push_back(RVec3(n));
+			}
 			else if (key == "f")
 			{
 				std::stringstream LineStream(Line);
@@ -64,8 +76,11 @@ RMeshShape::RMeshShape(const char* Filename)
 
 				for (int i = 0; i < 3; i++)
 				{
-					int Index = GetFirstNumericValue(IndexString[i]) - 1;
-					Indices.push_back(Index);
+					int PointIndex = GetNthNumericValue(0, IndexString[i]) - 1;
+					PointIndices.push_back(PointIndex);
+
+					int NormalIndex = GetNthNumericValue(2, IndexString[i]) - 1;
+					NormalIndices.push_back(NormalIndex);
 				}
 			}
 		}
@@ -73,11 +88,11 @@ RMeshShape::RMeshShape(const char* Filename)
 		InputFile.close();
 	}
 
-	for (int i = 0; i < (int)Indices.size(); i += 3)
+	for (int i = 0; i < (int)PointIndices.size(); i += 3)
 	{
-		const RVec3& p0 = Points[Indices[i]];
-		const RVec3& p1 = Points[Indices[i + 1]];
-		const RVec3& p2 = Points[Indices[i + 2]];
+		const RVec3& p0 = Points[PointIndices[i]];
+		const RVec3& p1 = Points[PointIndices[i + 1]];
+		const RVec3& p2 = Points[PointIndices[i + 2]];
 
 		RVec3 p0p1 = p1 - p0;
 		RVec3 p0p2 = p2 - p0;
@@ -87,7 +102,7 @@ RMeshShape::RMeshShape(const char* Filename)
 	}
 
 	Spatial = std::make_unique<KdTree>();
-	Spatial->Build(Points.data(), Indices.data(), (int)Indices.size());
+	Spatial->Build(Points.data(), PointIndices.data(), (int)PointIndices.size());
 
 }
 
@@ -96,19 +111,45 @@ bool RMeshShape::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult 
 #if 1
 	if (Spatial)
 	{
-		return Spatial->TestRayIntersection(InRay, Points.data(), OutResult);
+		int TriangleIndex = -1;
+		if (Spatial->TestRayIntersection(InRay, Points.data(), OutResult, &TriangleIndex))
+		{
+			if (OutResult)
+			{
+				const RVec3& p = OutResult->HitPosition;
+
+				int v0 = TriangleIndex * 3;
+				int v1 = TriangleIndex * 3 + 1;
+				int v2 = TriangleIndex * 3 + 2;
+
+				const RVec3& a = Points[PointIndices[v0]];
+				const RVec3& b = Points[PointIndices[v1]];
+				const RVec3& c = Points[PointIndices[v2]];
+
+				const RVec3& n0 = Normals[NormalIndices[v0]];
+				const RVec3& n1 = Normals[NormalIndices[v1]];
+				const RVec3& n2 = Normals[NormalIndices[v2]];
+
+				float u, v, w;
+				RMath::Barycentric(p, a, b, c, u, v, w);
+
+				OutResult->HitNormal = n0 * u + n1 * v + n2 * w;
+			}
+
+			return true;
+		}
 	}
 	return false;
 #else
 	RRay TestRay = InRay;
 	bool bResult = false;
 
-	for (int i = 0; i < (int)Indices.size(); i += 3)
+	for (int i = 0; i < (int)PointIndices.size(); i += 3)
 	{
 		const RVec3 TriPoints[] = {
-			Points[Indices[i]],
-			Points[Indices[i + 1]],
-			Points[Indices[i + 2]],
+			Points[PointIndices[i]],
+			Points[PointIndices[i + 1]],
+			Points[PointIndices[i + 2]],
 		};
 
 		const RVec3& Normal = FaceNormals[i / 3];

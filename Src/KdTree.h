@@ -22,24 +22,27 @@ enum class EAxis : unsigned char
 	Z,
 };
 
-struct TriangleIndex
+struct TriangleData
 {
-	TriangleIndex()
+	TriangleData()
 		: p0(-1)
 		, p1(-1)
 		, p2(-1)
+		, Index(-1)
 	{}
 
-	TriangleIndex(int InP0, int InP1, int InP2)
+	TriangleData(int InP0, int InP1, int InP2, int InIndex)
 		: p0(InP0)
 		, p1(InP1)
 		, p2(InP2)
+		, Index(InIndex)
 	{}
 
-	TriangleIndex(const TriangleIndex& rhs)
+	TriangleData(const TriangleData& rhs)
 		: p0(rhs.p0)
 		, p1(rhs.p1)
 		, p2(rhs.p2)
+		, Index(rhs.Index)
 	{}
 
 	RAabb GetBounds(const RVec3 Points[]) const
@@ -55,6 +58,7 @@ struct TriangleIndex
 	int p0;
 	int p1;
 	int p2;
+	int Index;		// Index of triangle in original mesh
 };
 
 struct KdNode
@@ -62,14 +66,14 @@ struct KdNode
 	unique_ptr<KdNode> Left;
 	unique_ptr<KdNode> Right;
 
-	TriangleIndex Triangle;
+	TriangleData Triangle;
 	RAabb Bounds;
 
 	KdNode() {}
 
-	void Build(const RVec3 Points[], const std::vector<TriangleIndex>& Triangles);
+	void Build(const RVec3 Points[], const std::vector<TriangleData>& Triangles);
 
-	bool TestRayIntersection(RRay& TestRay, const RVec3 Points[], RayHitResult* OutResult = nullptr) const;
+	bool TestRayIntersection(RRay& TestRay, const RVec3 Points[], RayHitResult* OutResult = nullptr, int* TriangleIndex = nullptr) const;
 };
 
 class KdTree
@@ -81,7 +85,7 @@ public:
 	void Build(const RVec3 Points[], const int Indices[], int NumIndices);
 
 	// Test intersection with ray
-	bool TestRayIntersection(const RRay& InRay, const RVec3 Points[], RayHitResult* OutResult = nullptr) const;
+	bool TestRayIntersection(const RRay& InRay, const RVec3 Points[], RayHitResult* OutResult = nullptr, int* TriangleIndex = nullptr) const;
 
 	// Get the bounds of this kd-tree
 	RAabb GetBounds() const;

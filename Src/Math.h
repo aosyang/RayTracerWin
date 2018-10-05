@@ -30,4 +30,8 @@ namespace RMath
 
 	// Generate random hemisphere direction with given normal direction
 	RVec3 RandomHemisphereDirection(const RVec3& Normal);
+
+	// Compute barycentric coordinates (u, v, w) for
+	// point p with respect to triangle (a, b, c)
+	void Barycentric(const RVec3& p, const RVec3& a, const RVec3& b, const RVec3& c, float& u, float& v, float &w);
 }
