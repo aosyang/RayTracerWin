@@ -41,9 +41,14 @@ struct AccumulatePixel
 		Num++;
 	}
 
-	Pixel GetPixel()
+	Pixel GetPixel() const
 	{
 		return MakePixelColor(AccumulatedColor / (float)Num);
+	}
+
+	Pixel GetGammaSpacePixel() const
+	{
+		return MakePixelColor(LinearToGamma(AccumulatedColor / (float)Num));
 	}
 
 	RVec3 AccumulatedColor;
@@ -81,7 +86,7 @@ void SetupScene()
 	g_Scene.AddShape(RSphere::Create(RVec3(1.2f, 1.0f, 3.0f), 0.5f), RMaterial(RVec3(0.1f, 1.0f, 0.2f), false, MT_Diffuse));
 	g_Scene.AddShape(RSphere::Create(RVec3(0.2f, 1.2f, 1.0f), 0.5f), RMaterial(RVec3(0.5f, 0.0f, 0.2f), false, MT_Diffuse | MT_Reflective));
 	g_Scene.AddShape(RSphere::Create(RVec3(-2.8f, 1.2f, 4.0f), 1.5f), RMaterial(RVec3(0.95f, 0.75f, 0.1f), false, MT_Diffuse | MT_Reflective/*MT_Reflective*/));
-	g_Scene.AddShape(RSphere::Create(RVec3(0.0f, -5.0f, 0.0f), 0.5f), RMaterial(RVec3(100.0f, 100.0f, 120.0f), false, MT_Emissive));					// Ceiling light
+	g_Scene.AddShape(RSphere::Create(RVec3(0.0f, -5.0f, 0.0f), 0.5f), RMaterial(RVec3(50.0f, 50.0f, 60.0f), false, MT_Emissive));					// Ceiling light
 	g_Scene.AddShape(RCapsule::Create(RVec3(1.5f, 0.0f, 0.0f), RVec3(2.0f, 1.0f, 0.0f), 0.5f), RMaterial(RVec3(0.25f, 0.75f, 0.6f), false, MT_Diffuse | MT_Reflective));
 	g_Scene.AddShape(RPlane::Create(RVec3(0.0f, -1.0f, 0.0f), RVec3(0.0f, 2.5f, 0.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));			// Ground
 	g_Scene.AddShape(RPlane::Create(RVec3(0.0f, 1.0f, 0.0f), RVec3(0.0f, -5.0f, 0.0f)), RMaterial(RVec3(1.2f, 1.2f, 1.5f), false, MT_Diffuse));			// Ceiling / Sky light plane
@@ -137,13 +142,13 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 		if (InOption.UseBaseColor)
 		{
 			// ARGB
-			Pixel color = MakePixelColor(c);
+			Pixel color = MakePixelColor(LinearToGamma(c));
 			*(bitcolor + PixelIndex) = color;
 		}
 		else
 		{
 			accuBuffer[PixelIndex].AddPixel(c);
-			*(bitcolor + PixelIndex) = accuBuffer[PixelIndex].GetPixel();
+			*(bitcolor + PixelIndex) = accuBuffer[PixelIndex].GetGammaSpacePixel();
 		}
 	}
 }

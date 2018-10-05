@@ -65,8 +65,17 @@ inline BYTE GetUint32ColorBlue(UINT32 Color)
 #endif
 }
 
+inline RVec3 LinearToGamma(const RVec3& color)
+{
+	static const float exponent = 1.0f / 2.2f;
+	return RVec3(
+		powf(color.x, exponent),
+		powf(color.y, exponent),
+		powf(color.z, exponent)
+	);
+}
 
-inline UINT32 MakePixelColor(RVec3 color)
+inline UINT32 MakePixelColor(const RVec3& color)
 {
     int r = int(Math::Min(Math::Max(color.x, 0.0f), 1.0f) * 255);
 	int g = int(Math::Min(Math::Max(color.y, 0.0f), 1.0f) * 255);
