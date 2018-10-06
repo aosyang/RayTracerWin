@@ -114,13 +114,13 @@ void KdNode::Build(const RVec3 Points[], const std::vector<TriangleData>& Triang
 
 	if (LeftNodeTriangles.size() > 0)
 	{
-		Left = std::make_unique<KdNode>();
+		Left = std::unique_ptr<KdNode>(new KdNode());
 		Left->Build(Points, LeftNodeTriangles);
 	}
 
 	if (RightNodeTriangles.size() > 0)
 	{
-		Right = std::make_unique<KdNode>();
+		Right = std::unique_ptr<KdNode>(new KdNode());
 		Right->Build(Points, RightNodeTriangles);
 	}
 }
@@ -200,7 +200,7 @@ void KdTree::Build(const RVec3 Points[], const int Indices[], int NumIndices)
 		);
 	}
 
-	RootNode = std::make_unique<KdNode>();
+	RootNode = std::unique_ptr<KdNode>(new KdNode());
 
 	RootNode->Build(Points, TriangleIndices);
 }

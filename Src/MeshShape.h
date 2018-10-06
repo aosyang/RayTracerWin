@@ -18,7 +18,7 @@ public:
 
 	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const override;
 
-	static unique_ptr<RMeshShape> Create(const char* Filename) { return std::make_unique<RMeshShape>(Filename); }
+	static unique_ptr<RMeshShape> Create(const char* Filename) { return std::unique_ptr<RMeshShape>(new RMeshShape(Filename)); }
 
 private:
 	std::vector<RVec3>		Points;

@@ -101,7 +101,7 @@ RMeshShape::RMeshShape(const char* Filename)
 		FaceNormals.push_back(Normal);
 	}
 
-	Spatial = std::make_unique<KdTree>();
+	Spatial = std::unique_ptr<KdTree>(new KdTree());
 	Spatial->Build(Points.data(), PointIndices.data(), (int)PointIndices.size());
 
 }

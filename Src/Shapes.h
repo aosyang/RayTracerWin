@@ -53,7 +53,7 @@ public:
         Aabb.ExpandBySphere(Center, Radius);
     }
 
-	static unique_ptr<RSphere> Create(const RVec3& InCenter, float InRadius) { return std::make_unique<RSphere>(InCenter, InRadius); }
+	static unique_ptr<RSphere> Create(const RVec3& InCenter, float InRadius) { return std::unique_ptr<RSphere>(new RSphere(InCenter, InRadius)); }
 
 	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const override;
 };
@@ -69,7 +69,7 @@ public:
 		: Normal(InNormal), Point(InPoint)
 	{}
 
-	static unique_ptr<RShape> Create(const RVec3& InNormal, const RVec3& InPoint) { return std::make_unique<RPlane>(InNormal, InPoint); }
+	static unique_ptr<RShape> Create(const RVec3& InNormal, const RVec3& InPoint) { return std::unique_ptr<RPlane>(new RPlane(InNormal, InPoint)); }
 
 	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const override;
 
@@ -91,7 +91,7 @@ public:
         Aabb.ExpandBySphere(End, Radius);
     }
 
-	static unique_ptr<RShape> Create(const RVec3& InStart, const RVec3& InEnd, float InRadius) { return std::make_unique<RCapsule>(InStart, InEnd, InRadius); }
+	static unique_ptr<RShape> Create(const RVec3& InStart, const RVec3& InEnd, float InRadius) { return std::unique_ptr<RCapsule>(new RCapsule(InStart, InEnd, InRadius)); }
 
 	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const override;
 
@@ -115,7 +115,7 @@ public:
 		Aabb.Expand(p2);
 	}
 
-	static unique_ptr<RShape> Create(const RVec3& p0, const RVec3& p1, const RVec3& p2) { return std::make_unique<RTriangle>(p0, p1, p2); }
+	static unique_ptr<RShape> Create(const RVec3& p0, const RVec3& p1, const RVec3& p2) { return std::unique_ptr<RTriangle>(new RTriangle(p0, p1, p2)); }
 
 	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /* = nullptr */) const override;
 };
