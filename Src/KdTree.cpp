@@ -186,7 +186,6 @@ KdTree::KdTree()
 
 void KdTree::Build(const RVec3 Points[], const int Indices[], int NumIndices)
 {
-	const TriangleData* Triangles = reinterpret_cast<const TriangleData*>(Indices);
 	const int NumTriangles = NumIndices / 3;
 
 	std::vector<TriangleData> TriangleIndices;
