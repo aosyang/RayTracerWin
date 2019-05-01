@@ -182,6 +182,7 @@ void UpdateBitmapPixels()
 			g_TaskQueue.AddTask(RenderThreadTask(i * bitmapWidth, (i + 1) * bitmapWidth - 1, BaseColorOption));
 		}
 
+		// Start all worker threads
 		for (int i = 0; i < ThreadCount; i++)
 		{
 			RenderThreads.push_back(std::thread(ThreadTaskWorker));
@@ -196,9 +197,11 @@ void UpdateBitmapPixels()
 		//return;
 	}
 
+	// Number of times each pixel is sampled
 	static const int TotalSamplesNum = 500;
 
 	auto StartTime = std::chrono::system_clock::now();
+	auto LastFrameTime = StartTime;
 
 	for (int Sample = 0; Sample < TotalSamplesNum; Sample++)
 	{
@@ -229,15 +232,19 @@ void UpdateBitmapPixels()
 		auto CurrentTime = std::chrono::system_clock::now();
 		auto ElapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(CurrentTime - StartTime);
 		auto RemainingTime = ElapsedTime / (Sample + 1) * (TotalSamplesNum - Sample - 1);
-		int ElapsedTimeSec = (int)(ElapsedTime.count() / 1000);
-		int RemainingTimeSec = (int)(RemainingTime.count() / 1000);
+		int ElapsedTimeMs = (int)(ElapsedTime.count());
+		int RemainingTimeMs = (int)(RemainingTime.count());
+		auto FrameTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(CurrentTime - LastFrameTime);
+
+		char TextBuffer[1024];
+		RPrintf(TextBuffer, sizeof(TextBuffer), "RayTracer - S: [%d/%d] | T: [%dms/%dms] | F: [%dms]", Sample + 1, TotalSamplesNum, ElapsedTimeMs, RemainingTimeMs, FrameTimeMs);
+
+		LastFrameTime = CurrentTime;
 
 #if (PLATFORM_OSX)
-        printf("S: [%d/%d] | T: [%ds/%ds]", Sample + 1, TotalSamplesNum, ElapsedTimeSec, RemainingTimeSec);
+        printf("%s\n", TextBuffer);
 #else
-		char buf[1024];
-		sprintf_s(buf, sizeof(buf), "RayTracer - S: [%d/%d] | T: [%ds/%ds]", Sample + 1, TotalSamplesNum, ElapsedTimeSec, RemainingTimeSec);
-		g_RenderWindow.SetTitle(buf);
+		g_RenderWindow.SetTitle(TextBuffer);
 #endif  // PLATFORM_OSX
 
 		if (g_Scene.IsTerminatingProgram())

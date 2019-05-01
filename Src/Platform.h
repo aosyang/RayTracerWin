@@ -19,3 +19,11 @@ typedef unsigned int UINT32;
 #include <windows.h>
 
 #endif
+
+
+// Platform specific definitions
+#if (PLATFORM_WIN32)
+#define RPrintf(Buffer, Size, ...)		sprintf_s(Buffer, Size, __VA_ARGS__)
+#else
+#define RPrintf(Buffer, Size, ...)		snprintf(Buffer, Size, __VA_ARGS__)
+#endif
