@@ -164,6 +164,34 @@ void ThreadTaskWorker()
 	}
 }
 
+// Convert milliseconds to h:m:s format
+void FormatTimeString(char* Buffer, int BufferSize, int Milliseconds)
+{
+	if (Milliseconds < 1000)
+	{
+		RPrintf(Buffer, BufferSize, "%dms", Milliseconds);
+	}
+	else
+	{
+		int Hours = Milliseconds / (3600 * 1000);
+		int Minutes = Milliseconds / (60 * 1000) - Hours * 60;
+		int Seconds = Milliseconds / 1000 - Minutes * 60 - Hours * 3600;
+
+		if (Hours)
+		{
+			RPrintf(Buffer, BufferSize, "%dh:%dm:%ds", Hours, Minutes, Seconds);
+		}
+		else if (Minutes)
+		{
+			RPrintf(Buffer, BufferSize, "%dm:%ds", Minutes, Seconds);
+		}
+		else
+		{
+			RPrintf(Buffer, BufferSize, "%ds", Seconds);
+		}
+	}
+}
+
 void UpdateBitmapPixels()
 {
 	// Total number of worker threads
@@ -236,8 +264,15 @@ void UpdateBitmapPixels()
 		int RemainingTimeMs = (int)RemainingTime.count();
 		int FrameTimeMs = (int)std::chrono::duration_cast<std::chrono::milliseconds>(CurrentTime - LastFrameTime).count();
 
+
+		char ElapsedTimeStr[1024];
+		FormatTimeString(ElapsedTimeStr, sizeof(ElapsedTimeStr), ElapsedTimeMs);
+
+		char RemainingTimeStr[1024];
+		FormatTimeString(RemainingTimeStr, sizeof(RemainingTimeStr), RemainingTimeMs);
+
 		char TextBuffer[1024];
-		RPrintf(TextBuffer, sizeof(TextBuffer), "RayTracer - S: [%d/%d] | T: [%dms/%dms] | F: [%dms]", Sample + 1, TotalSamplesNum, ElapsedTimeMs, RemainingTimeMs, FrameTimeMs);
+		RPrintf(TextBuffer, sizeof(TextBuffer), "RayTracer - S: [%d/%d] | T: [%s/%s] | F: [%dms]", Sample + 1, TotalSamplesNum, ElapsedTimeStr, RemainingTimeStr, FrameTimeMs);
 
 		LastFrameTime = CurrentTime;
 
