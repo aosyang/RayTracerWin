@@ -41,74 +41,81 @@ RMeshShape::RMeshShape(const char* Filename)
 {
 	std::ifstream InputFile(Filename);
 	
-	if (InputFile.is_open())
+	if (!InputFile.is_open())
 	{
-		std::string Line;
-		while (std::getline(InputFile, Line))
+		// If file is not found, search an alternative path for it.
+		char AlterPath[1024];
+		RPrintf(AlterPath, sizeof(AlterPath), "../%s", Filename);
+		InputFile = std::ifstream(AlterPath);
+
+		if (!InputFile.is_open())
 		{
-			std::string key = GetLineKeyword(Line);
-			std::string dummy;
+			RLog("Error - RMeshShape: Unable to open %s!\n", Filename);
+			return;
+		}
+	}
 
-			if (key == "v")
+	std::string Line;
+	while (std::getline(InputFile, Line))
+	{
+		std::string key = GetLineKeyword(Line);
+		std::string dummy;
+
+		if (key == "v")
+		{
+			std::stringstream LineStream(Line);
+			float Pos[3];
+			LineStream >> dummy >> Pos[0] >> Pos[1] >> Pos[2];
+
+			// Hack: Move mesh away from camera
+			Pos[2] += 1.0f;
+
+			RVec3 Vertex(Pos);
+			Points.push_back(Vertex);
+			Aabb.Expand(Vertex);
+		}
+		else if (key == "vn")
+		{
+			std::stringstream LineStream(Line);
+			float n[3];
+			LineStream >> dummy >> n[0] >> n[1] >> n[2];
+			Normals.push_back(RVec3(n));
+		}
+		else if (key == "f")
+		{
+			std::stringstream LineStream(Line);
+			std::string IndexString[3];
+			LineStream >> dummy >> IndexString[0] >> IndexString[1] >> IndexString[2];
+
+			for (int i = 0; i < 3; i++)
 			{
-				std::stringstream LineStream(Line);
-				float Pos[3];
-				LineStream >> dummy >> Pos[0] >> Pos[1] >> Pos[2];
-				
-				// Hack: Move mesh away from camera
-				Pos[2] += 1.0f;
+				int PointIndex = GetNthNumericValue(0, IndexString[i]) - 1;
+				PointIndices.push_back(PointIndex);
 
-				RVec3 Vertex(Pos);
-				Points.push_back(Vertex);
-				Aabb.Expand(Vertex);
-			}
-			else if (key == "vn")
-			{
-				std::stringstream LineStream(Line);
-				float n[3];
-				LineStream >> dummy >> n[0] >> n[1] >> n[2];
-				Normals.push_back(RVec3(n));
-			}
-			else if (key == "f")
-			{
-				std::stringstream LineStream(Line);
-				std::string IndexString[3];
-				LineStream >> dummy >> IndexString[0] >> IndexString[1] >> IndexString[2];
-
-				for (int i = 0; i < 3; i++)
-				{
-					int PointIndex = GetNthNumericValue(0, IndexString[i]) - 1;
-					PointIndices.push_back(PointIndex);
-
-					int NormalIndex = GetNthNumericValue(2, IndexString[i]) - 1;
-					NormalIndices.push_back(NormalIndex);
-				}
+				int NormalIndex = GetNthNumericValue(2, IndexString[i]) - 1;
+				NormalIndices.push_back(NormalIndex);
 			}
 		}
-
-		InputFile.close();
-		RLog("Mesh loaded from %s. Verts: %d, Triangles: %d\n", Filename, (int)Points.size(), (int)PointIndices.size() / 3);
-
-		for (int i = 0; i < (int)PointIndices.size(); i += 3)
-		{
-			const RVec3& p0 = Points[PointIndices[i]];
-			const RVec3& p1 = Points[PointIndices[i + 1]];
-			const RVec3& p2 = Points[PointIndices[i + 2]];
-
-			RVec3 p0p1 = p1 - p0;
-			RVec3 p0p2 = p2 - p0;
-			RVec3 Normal = p0p1.Cross(p0p2).GetNormalizedVec3();
-
-			FaceNormals.push_back(Normal);
-		}
-
-		Spatial = std::unique_ptr<KdTree>(new KdTree());
-		Spatial->Build(Points.data(), PointIndices.data(), (int)PointIndices.size());
 	}
-	else
+
+	InputFile.close();
+	RLog("Mesh loaded from %s. Verts: %d, Triangles: %d\n", Filename, (int)Points.size(), (int)PointIndices.size() / 3);
+
+	for (int i = 0; i < (int)PointIndices.size(); i += 3)
 	{
-		RLog("Error - RMeshShape: Unable to open %s!\n", Filename);
+		const RVec3& p0 = Points[PointIndices[i]];
+		const RVec3& p1 = Points[PointIndices[i + 1]];
+		const RVec3& p2 = Points[PointIndices[i + 2]];
+
+		RVec3 p0p1 = p1 - p0;
+		RVec3 p0p2 = p2 - p0;
+		RVec3 Normal = p0p1.Cross(p0p2).GetNormalizedVec3();
+
+		FaceNormals.push_back(Normal);
 	}
+
+	Spatial = std::unique_ptr<KdTree>(new KdTree());
+	Spatial->Build(Points.data(), PointIndices.data(), (int)PointIndices.size());
 }
 
 bool RMeshShape::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= nullptr*/) const
