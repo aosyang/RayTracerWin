@@ -6,6 +6,7 @@
 
 #include "MeshShape.h"
 #include "Math.h"
+#include "Platform.h"
 
 #include <fstream>
 #include <string>
@@ -86,24 +87,28 @@ RMeshShape::RMeshShape(const char* Filename)
 		}
 
 		InputFile.close();
-	}
+		RLog("Mesh loaded from %s. Verts: %d, Triangles: %d\n", Filename, (int)Points.size(), (int)PointIndices.size() / 3);
 
-	for (int i = 0; i < (int)PointIndices.size(); i += 3)
+		for (int i = 0; i < (int)PointIndices.size(); i += 3)
+		{
+			const RVec3& p0 = Points[PointIndices[i]];
+			const RVec3& p1 = Points[PointIndices[i + 1]];
+			const RVec3& p2 = Points[PointIndices[i + 2]];
+
+			RVec3 p0p1 = p1 - p0;
+			RVec3 p0p2 = p2 - p0;
+			RVec3 Normal = p0p1.Cross(p0p2).GetNormalizedVec3();
+
+			FaceNormals.push_back(Normal);
+		}
+
+		Spatial = std::unique_ptr<KdTree>(new KdTree());
+		Spatial->Build(Points.data(), PointIndices.data(), (int)PointIndices.size());
+	}
+	else
 	{
-		const RVec3& p0 = Points[PointIndices[i]];
-		const RVec3& p1 = Points[PointIndices[i + 1]];
-		const RVec3& p2 = Points[PointIndices[i + 2]];
-
-		RVec3 p0p1 = p1 - p0;
-		RVec3 p0p2 = p2 - p0;
-		RVec3 Normal = p0p1.Cross(p0p2).GetNormalizedVec3();
-
-		FaceNormals.push_back(Normal);
+		RLog("Error - RMeshShape: Unable to open %s!\n", Filename);
 	}
-
-	Spatial = std::unique_ptr<KdTree>(new KdTree());
-	Spatial->Build(Points.data(), PointIndices.data(), (int)PointIndices.size());
-
 }
 
 bool RMeshShape::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= nullptr*/) const

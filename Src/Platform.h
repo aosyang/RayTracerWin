@@ -21,9 +21,24 @@ typedef unsigned int UINT32;
 #endif
 
 
+#define LogBufSize 16384
+
+
 // Platform specific definitions
 #if (PLATFORM_WIN32)
-#define RPrintf(Buffer, Size, ...)		sprintf_s(Buffer, Size, __VA_ARGS__)
+
+	// Print to char buffer
+	#define RPrintf(Buffer, Size, ...)		sprintf_s(Buffer, Size, __VA_ARGS__)
+
+	// Print to output window
+	#define RLog(...)						{ char LogMsg[LogBufSize]; sprintf_s(LogMsg, __VA_ARGS__); OutputDebugStringA(LogMsg); }
+
 #else
-#define RPrintf(Buffer, Size, ...)		snprintf(Buffer, Size, __VA_ARGS__)
+
+	// Print to char buffer
+	#define RPrintf(Buffer, Size, ...)		snprintf(Buffer, Size, __VA_ARGS__)
+
+	// Print to output window
+	#define RLog(...)						{ printf(__VA_ARGS__); }
+
 #endif

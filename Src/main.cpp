@@ -232,9 +232,9 @@ void UpdateBitmapPixels()
 		auto CurrentTime = std::chrono::system_clock::now();
 		auto ElapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(CurrentTime - StartTime);
 		auto RemainingTime = ElapsedTime / (Sample + 1) * (TotalSamplesNum - Sample - 1);
-		int ElapsedTimeMs = (int)(ElapsedTime.count());
-		int RemainingTimeMs = (int)(RemainingTime.count());
-		auto FrameTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(CurrentTime - LastFrameTime);
+		int ElapsedTimeMs = (int)ElapsedTime.count();
+		int RemainingTimeMs = (int)RemainingTime.count();
+		int FrameTimeMs = (int)std::chrono::duration_cast<std::chrono::milliseconds>(CurrentTime - LastFrameTime).count();
 
 		char TextBuffer[1024];
 		RPrintf(TextBuffer, sizeof(TextBuffer), "RayTracer - S: [%d/%d] | T: [%dms/%dms] | F: [%dms]", Sample + 1, TotalSamplesNum, ElapsedTimeMs, RemainingTimeMs, FrameTimeMs);
