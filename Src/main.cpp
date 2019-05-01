@@ -27,6 +27,12 @@
 #include <vector>
 #include <chrono>
 
+// Whether to enable 2x2 antialiasing for pixel samping
+#define ENABLE_ANTIALIASING 1
+
+// Number of times each pixel is sampled
+static const int TotalSamplesNum = 500;
+
 Pixel bitcolor[bitmapWidth * bitmapHeight];
 
 struct AccumulatePixel
@@ -107,19 +113,15 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 		float dx = (float)(x - bitmapWidth / 2) / (bitmapWidth * 2);
 		float dy = (float)(y - bitmapWidth / 2) / (bitmapHeight * 2);
 
-#if 0
-		RRay ray(RVec3(0, 0, -3), RVec3(dx, dy, 0.5f), 1000.0f);
-
-		Pixel color = MakePixelColor(RayTrace(ray));
-#else
+        RVec3 c = RVec3::Zero();
+        
+#if ENABLE_ANTIALIASING
 		float inv_pixel_width = 1.0f / (bitmapWidth * 4);
 
 		float ox[4] = { 0.0f, inv_pixel_width, 0.0f, inv_pixel_width };
 		float oy[4] = { 0.0f, 0.0f, inv_pixel_width, inv_pixel_width };
 
 		const float offset = inv_pixel_width * 0.5f;
-
-		RVec3 c = RVec3::Zero();
 
 		// Randomly sample 2x2 nearby pixels for antialiasing
 		for (int i = 0; i < 4; i++)
@@ -137,7 +139,11 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 		}
 
 		c /= 4.0f;
-#endif
+#else
+        RVec3 Dir(dx, dy, 0.5f);
+        RRay ray(RVec3(0, 0, -5), Dir.GetNormalizedVec3(), 1000.0f);
+        c = g_Scene.RayTrace(ray, MaxBounceCount, InOption);
+#endif  // ENABLE_ANTIALIASING
 
 		if (InOption.UseBaseColor)
 		{
@@ -224,9 +230,6 @@ void UpdateBitmapPixels()
 
 		//return;
 	}
-
-	// Number of times each pixel is sampled
-	static const int TotalSamplesNum = 500;
 
 	auto StartTime = std::chrono::system_clock::now();
 	auto LastFrameTime = StartTime;
