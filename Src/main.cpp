@@ -264,7 +264,6 @@ void UpdateBitmapPixels()
 		int RemainingTimeMs = (int)RemainingTime.count();
 		int FrameTimeMs = (int)std::chrono::duration_cast<std::chrono::milliseconds>(CurrentTime - LastFrameTime).count();
 
-
 		char ElapsedTimeStr[1024];
 		FormatTimeString(ElapsedTimeStr, sizeof(ElapsedTimeStr), ElapsedTimeMs);
 
@@ -272,15 +271,15 @@ void UpdateBitmapPixels()
 		FormatTimeString(RemainingTimeStr, sizeof(RemainingTimeStr), RemainingTimeMs);
 
 		char TextBuffer[1024];
-		RPrintf(TextBuffer, sizeof(TextBuffer), "RayTracer - S: [%d/%d] | T: [%s/%s] | F: [%dms]", Sample + 1, TotalSamplesNum, ElapsedTimeStr, RemainingTimeStr, FrameTimeMs);
+		RPrintf(TextBuffer, sizeof(TextBuffer), "RayTracer - S: [%d/%d] | T: [%s / %s] | F: [%dms]", Sample + 1, TotalSamplesNum, ElapsedTimeStr, RemainingTimeStr, FrameTimeMs);
 
 		LastFrameTime = CurrentTime;
 
-#if (PLATFORM_OSX)
-        printf("%s\n", TextBuffer);
-#else
+		// Log render information
+        RLog("%s\n", TextBuffer);
+
+		// Update window title with render information
 		g_RenderWindow.SetTitle(TextBuffer);
-#endif  // PLATFORM_OSX
 
 		if (g_Scene.IsTerminatingProgram())
 		{
