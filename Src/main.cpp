@@ -26,8 +26,9 @@
 
 #include <vector>
 #include <chrono>
+#include <sstream>
 
-// Whether to enable 2x2 antialiasing for pixel samping
+// Whether to enable 2x2 antialiasing for pixel sampling
 #define ENABLE_ANTIALIASING 1
 
 // Number of times each pixel is sampled
@@ -83,6 +84,35 @@ struct RenderThreadTask
 };
 
 ThreadTaskQueue<RenderThreadTask> g_TaskQueue;
+
+//////////////////////////////////////////////////////////////////////////
+// Log thread - Begin
+//////////////////////////////////////////////////////////////////////////
+
+const auto ProgramStartTime = std::chrono::system_clock::now();
+
+int GetTimeInMillisecond()
+{
+	auto CurrentTime = std::chrono::system_clock::now();
+	return (int)std::chrono::duration_cast<std::chrono::milliseconds>(CurrentTime - ProgramStartTime).count();
+}
+
+void DisplayThreadAndTime()
+{
+	std::thread::id this_id = std::this_thread::get_id();
+	std::stringstream ss;
+	ss << this_id;
+	const std::string ThreadName = ss.str();
+
+	RLog("[Thread: %s][%d] ", ThreadName.c_str(), GetTimeInMillisecond());
+}
+
+//#define RLogThread(...)			{ DisplayThreadAndTime(); RLog(__VA_ARGS__); }
+#define RLogThread(...)
+
+//////////////////////////////////////////////////////////////////////////
+// Log thread - End
+//////////////////////////////////////////////////////////////////////////
 
 RayTracerScene g_Scene;
 
@@ -161,12 +191,48 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 
 void ThreadTaskWorker()
 {
-	RenderThreadTask Task;
+	std::thread::id this_id = std::this_thread::get_id();
+	std::stringstream ss;
+	ss << this_id;
+	const std::string ThreadName = ss.str();
 
-	// Run until all tasks are finished
-	while (g_TaskQueue.GetTask(&Task) && !g_Scene.IsTerminatingProgram())
+	RLogThread("Start worker thread [%s]\n", ThreadName.c_str());
+
+	while (1)
 	{
+		RenderThreadTask Task;
+		{
+			std::unique_lock<std::mutex> ThreadLock(g_TaskQueue.GetMutex());
+
+			RLogThread("Thread [%s] is waiting\n", ThreadName.c_str());
+
+			// If the task queue is empty, wait until a new task is queued.
+			g_TaskQueue.GetWorkerThreadCondition().wait(ThreadLock, [] {
+				return g_TaskQueue.GetNumTasks() > 0 || g_Scene.IsTerminatingProgram();
+			});
+
+			// Mutex is locked now
+
+			// Handle program terminating
+			if (g_Scene.IsTerminatingProgram())
+			{
+				RLogThread("Terminating thread [%s]\n", ThreadName.c_str());
+				return;
+			}
+
+			// Get a task from task queue
+			g_TaskQueue.PopTask(&Task);
+
+			RLogThread("Remaining tasks in queue: %d\n", g_TaskQueue.GetNumTasks());
+
+			// Mutex will be unlocked when leaving the scope. Other worker threads will then get tasks afterwards.
+		}
+
+		RLogThread("Executing render task on thread [%s]...\n", ThreadName.c_str());
 		ThreadWorker_Render(Task.Start, Task.End, 4, Task.Option);
+		RLogThread("Render task is done on thread [%s]!\n", ThreadName.c_str());
+
+		g_TaskQueue.NotifySingleTaskDone();
 	}
 }
 
@@ -206,29 +272,25 @@ void UpdateBitmapPixels()
 	RenderOption BaseColorOption;
 	BaseColorOption.UseBaseColor = true;
 
+	// Start all worker threads in detached mode
+	for (int i = 0; i < ThreadCount; i++)
+	{
+		std::thread(ThreadTaskWorker).detach();
+	}
+
 	// Draw base color for preview
 	{
-		std::vector<std::thread> RenderThreads;
-
 		// Split rendering area to tasks
 		for (int i = 0; i < bitmapHeight; i++)
 		{
-			g_TaskQueue.AddTask(RenderThreadTask(i * bitmapWidth, (i + 1) * bitmapWidth - 1, BaseColorOption));
+			//RLog("Creating task [%d/%d]...\n", i + 1, bitmapHeight);
+			g_TaskQueue.PushTask(RenderThreadTask(i * bitmapWidth, (i + 1) * bitmapWidth - 1, BaseColorOption));
 		}
 
-		// Start all worker threads
-		for (int i = 0; i < ThreadCount; i++)
-		{
-			RenderThreads.push_back(std::thread(ThreadTaskWorker));
-		}
+		RLog("Done pushing all tasks.\n");
 
 		// Wait until all threads finish their work of current sample
-		for (auto& Thread : RenderThreads)
-		{
-			Thread.join();
-		}
-
-		//return;
+		g_TaskQueue.WaitForAllTasksDone();
 	}
 
 	auto StartTime = std::chrono::system_clock::now();
@@ -236,29 +298,18 @@ void UpdateBitmapPixels()
 
 	for (int Sample = 0; Sample < TotalSamplesNum; Sample++)
 	{
-		std::vector<std::thread> RenderThreads;
-
 		// Split rendering area to tasks
 		for (int i = 0; i < bitmapHeight; i++)
 		{
-			g_TaskQueue.AddTask(RenderThreadTask(i * bitmapWidth, (i + 1) * bitmapWidth - 1, RenderOption()));
-		}
-		
-		for (int i = 0; i < ThreadCount; i++)
-		{
-#if 1
-			RenderThreads.push_back(std::thread(ThreadTaskWorker));
-#else
-			ThreadWorker_Render(i * step, (i + 1) * step);
-			PresentRenderBuffer(g_DeviceContext);
-#endif
+			// One task covers rendering a single line from left to right
+			int Start = i * bitmapWidth;
+			int End = (i + 1) * bitmapWidth - 1;
+
+			g_TaskQueue.PushTask(RenderThreadTask(Start, End, RenderOption()));
 		}
 
 		// Wait until all threads finish their work of current sample
-		for (auto& Thread : RenderThreads)
-		{
-			Thread.join();
-		}
+		g_TaskQueue.WaitForAllTasksDone();
 
 		auto CurrentTime = std::chrono::system_clock::now();
 		auto ElapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(CurrentTime - StartTime);
@@ -313,6 +364,7 @@ int main(int argc, char *argv[])
 	g_RenderWindow.Destroy();
 	g_Scene.NotifyTerminatingProgram();
 
+	g_TaskQueue.NotifyQuit();
 	RenderThread.join();
 
 	return 0;

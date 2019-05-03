@@ -140,6 +140,7 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
 					RVec3 DiffuseReflectionDirection = RMath::RandomHemisphereDirection(result.HitNormal);
 					RRay DiffuseRay(result.HitPosition + DiffuseReflectionDirection * 0.001f, DiffuseReflectionDirection, RemainingDistance);
 
+					// Lambertian reflectance
 					DotProductResult = Math::Max(0.0f, result.HitNormal.Dot(DiffuseReflectionDirection));
 
 					DiffuseColor = RayTrace(DiffuseRay, MaxBounceTimes - 1, InOption);
