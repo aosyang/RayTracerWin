@@ -15,19 +15,12 @@
 
 using std::unique_ptr;
 
-
-// Types of shapes used for ray tracing
-enum EShape
-{
-	ST_Sphere,
-	ST_Plane,
-};
-
+// Surface material types
 enum EMaterial
 {
-	MT_Emissive = 1 << 0,
-	MT_Diffuse = 1 << 1,
-	MT_Reflective = 1 << 2,
+	MT_Emissive		= 1 << 0,
+	MT_Diffuse		= 1 << 1,
+	MT_Reflective	= 1 << 2,
 };
 
 struct RenderOption

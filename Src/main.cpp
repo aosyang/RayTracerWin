@@ -276,14 +276,16 @@ void UpdateBitmapPixels()
 	const int ThreadCount = DetectWorkerThreadsNum();
 
 	RLog("Starting rendering tasks on %d threads...\n", ThreadCount);
+	std::vector<std::thread> WorkerThreads;
 
 	RenderOption BaseColorOption;
 	BaseColorOption.UseBaseColor = true;
 
-	// Start all worker threads in detached mode
+	// Start all worker threads
 	for (int i = 0; i < ThreadCount; i++)
 	{
-		std::thread(ThreadTaskWorker).detach();
+		std::thread Worker(ThreadTaskWorker);
+		WorkerThreads.push_back(std::move(Worker));
 	}
 
 	// Draw base color for preview
@@ -292,7 +294,11 @@ void UpdateBitmapPixels()
 		for (int i = 0; i < bitmapHeight; i++)
 		{
 			//RLog("Creating task [%d/%d]...\n", i + 1, bitmapHeight);
-			g_TaskQueue.PushTask(RenderThreadTask(i * bitmapWidth, (i + 1) * bitmapWidth - 1, BaseColorOption));
+
+			int Start = i * bitmapWidth;
+			int End = (i + 1) * bitmapWidth - 1;
+			
+			g_TaskQueue.PushTask(RenderThreadTask(Start, End, BaseColorOption));
 		}
 
 		RLog("Done pushing all tasks.\n");
@@ -347,6 +353,12 @@ void UpdateBitmapPixels()
 		{
 			break;
 		}
+	}
+
+	// Wait for all render threads to finish
+	for (auto& Thread : WorkerThreads)
+	{
+		Thread.join();
 	}
 }
 
