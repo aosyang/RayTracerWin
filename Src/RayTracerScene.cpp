@@ -46,64 +46,20 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
 		return RVec3(0, 0, 0);
 	}
 
-	RRay TestRay = InRay;
-
 	if (MaxBounceTimes == 0)
+	{
 		return RVec3::Zero();
+	}
 
 	RVec3 FinalColor = RVec3::Zero();
 
-	RayHitResult result;
-	int HitShapeIndex = -1;
-
-	int Index = 0;
-
-	// Get nearest hit point for this ray
-	for (auto& Shape : SceneShapes)
-	{
-		if (!Shape->HasCullingBounds() || TestRay.TestIntersectionWithAabb(Shape->GetBounds()))
-		{
-			bool hit = Shape->TestRayIntersection(TestRay, &result);
-
-			if (hit)
-			{
-				// Shorten distance of current testing ray
-				TestRay.Distance = result.Distance;
-				HitShapeIndex = Index;
-			}
-		}
-
-		Index++;
-	}
+	RayHitResult Result;
+	int HitShapeIndex = FindIntersectionWithScene(InRay, Result);
 
 	if (HitShapeIndex != -1)
 	{
 		auto& HitShape = SceneShapes[HitShapeIndex];
 		auto& Material = HitShape->GetMaterial();
-
-		float DiffuseRatio = 1.0f;
-
-		if (Material.MaterialFlags & MT_Reflective)
-		{
-			float RemainingDistance = InRay.Distance - result.Distance;
-			if (RemainingDistance > 0)
-			{
-				const float ReflectiveRatio = 0.5f;
-				DiffuseRatio = 1.0f - ReflectiveRatio;
-
-				if (!InOption.UseBaseColor)
-				{
-					if (InRay.Direction.Dot(result.HitNormal) < 0)
-					{
-						RVec3 newDir = InRay.Direction.Reflect(result.HitNormal);
-
-						RRay reflRay(result.HitPosition + newDir * 0.001f, newDir, RemainingDistance);
-
-						FinalColor += RayTrace(reflRay, MaxBounceTimes - 1, InOption) * ReflectiveRatio;
-					}
-				}
-			}
-		}
 
 		RVec3 SurfaceColor = Material.Color;
 
@@ -111,9 +67,9 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
 		if (Material.UseCheckerboardPattern)
 		{
 			bool color = false;
-			float fx = result.HitPosition.x * 0.2f;
-			float fy = result.HitPosition.y * 0.2f;
-			float fz = result.HitPosition.z * 0.2f;
+			float fx = Result.HitPosition.x * 0.2f;
+			float fy = Result.HitPosition.y * 0.2f;
+			float fz = Result.HitPosition.z * 0.2f;
 
 			if (fx - floorf(fx) > 0.5f)
 				color = !color;
@@ -126,22 +82,56 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
 				SurfaceColor *= 0.5f;
 		}
 
-		if (Material.MaterialFlags & MT_Diffuse)
+		if (InOption.UseBaseColor)
 		{
-			float RemainingDistance = InRay.Distance - result.Distance;
-			if (RemainingDistance > 0)
+			// Base color render pass for previewing
+			if (Material.MaterialFlags & MT_Diffuse)
 			{
-				float DotProductResult = 1.0f;
-				RVec3 DiffuseColor = RVec3(1.0f, 1.0f, 1.0f);
+				FinalColor += SurfaceColor;
+				FinalColor *= RVec3::Dot(Result.HitNormal, RVec3(0, -1, 0)) * 0.5f + 0.5f;
+			}
 
-				if (!InOption.UseBaseColor)
+			if (Material.MaterialFlags & MT_Emissive)
+			{
+				FinalColor += SurfaceColor;
+			}
+		}
+		else
+		{
+			float DiffuseRatio = 1.0f;
+
+			// The remaining distance ray will travel
+			float RayDistance = InRay.Distance - Result.Distance;
+
+			if (RayDistance > 0)
+			{
+				if (Material.MaterialFlags & MT_Reflective)
 				{
+					const float ReflectiveRatio = 0.5f;
+					DiffuseRatio = 1.0f - ReflectiveRatio;
 
-					RVec3 DiffuseReflectionDirection = RMath::RandomHemisphereDirection(result.HitNormal);
-					RRay DiffuseRay(result.HitPosition + DiffuseReflectionDirection * 0.001f, DiffuseReflectionDirection, RemainingDistance);
+					// Ignore hitting a surface from its back side
+					if (InRay.Direction.Dot(Result.HitNormal) < 0)
+					{
+						// The direction of reflection
+						RVec3 newDir = InRay.Direction.Reflect(Result.HitNormal);
+						RRay reflRay(Result.HitPosition + newDir * 0.001f, newDir, RayDistance);
+
+						FinalColor += RayTrace(reflRay, MaxBounceTimes - 1, InOption) * ReflectiveRatio;
+					}
+				}
+
+				if (Material.MaterialFlags & MT_Diffuse)
+				{
+					float DotProductResult = 1.0f;
+					RVec3 DiffuseColor = RVec3(1.0f, 1.0f, 1.0f);
+
+					// Ray bounces off a surface in a random direction of a hemisphere
+					RVec3 DiffuseReflectionDirection = RMath::RandomHemisphereDirection(Result.HitNormal);
+					RRay DiffuseRay(Result.HitPosition + DiffuseReflectionDirection * 0.001f, DiffuseReflectionDirection, RayDistance);
 
 					// Lambertian reflectance
-					DotProductResult = Math::Max(0.0f, result.HitNormal.Dot(DiffuseReflectionDirection));
+					DotProductResult = Math::Max(0.0f, Result.HitNormal.Dot(DiffuseReflectionDirection));
 
 					DiffuseColor = RayTrace(DiffuseRay, MaxBounceTimes - 1, InOption);
 
@@ -150,27 +140,50 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
 					for (int i = 0; i < ARRAYSIZE(GSceneLights); i++)
 					{
 						LightData* l = &GSceneLights[i];
-						FinalColor += CalculateLightColor(l, result, SurfaceColor) * DiffuseRatio;
+						FinalColor += CalculateLightColor(l, Result, SurfaceColor) * DiffuseRatio;
 					}
 #endif
-				}
 
-				FinalColor += SurfaceColor * DiffuseColor * DotProductResult * DiffuseRatio;
-
-				if (InOption.UseBaseColor)
-				{
-					FinalColor *= RVec3::Dot(result.HitNormal, RVec3(0, -1, 0)) * 0.5f + 0.5f;
+					FinalColor += SurfaceColor * DiffuseColor * DotProductResult * DiffuseRatio;
 				}
 			}
-		}
 
-		if (Material.MaterialFlags & MT_Emissive)
-		{
-			FinalColor += SurfaceColor;
+			if (Material.MaterialFlags & MT_Emissive)
+			{
+				FinalColor += SurfaceColor;
+			}
 		}
 	}
 
 	return FinalColor;
+}
+
+int RayTracerScene::FindIntersectionWithScene(RRay TestRay, RayHitResult& OutResult) const
+{
+	int HitShapeIndex = -1;
+	int Index = 0;
+
+	// Get nearest hit point for this ray
+	for (auto& Shape : SceneShapes)
+	{
+		// If shape has a bound, run bound intersection test for early out.
+		// Note: Shapes such as planes don't have bounds. Always run a full intersection test on them.
+		if (!Shape->HasCullingBounds() || TestRay.TestIntersectionWithAabb(Shape->GetBounds()))
+		{
+			bool hit = Shape->TestRayIntersection(TestRay, &OutResult);
+
+			if (hit)
+			{
+				// Shorten distance of current testing ray
+				TestRay.Distance = OutResult.Distance;
+				HitShapeIndex = Index;
+			}
+		}
+
+		Index++;
+	}
+
+	return HitShapeIndex;
 }
 
 RVec3 RayTracerScene::CalculateLightColor(const LightData* InLight, const RayHitResult &InHitResult, const RVec3& InSurfaceColor) const

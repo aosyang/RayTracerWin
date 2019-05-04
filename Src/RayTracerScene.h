@@ -32,6 +32,7 @@ enum EMaterial
 
 struct RenderOption
 {
+	// Do not ray trace. Use geometry color for a fast preview pass.
 	bool UseBaseColor;
 
 	RenderOption()
@@ -61,6 +62,9 @@ public:
 
 	// Run the ray tracing along a ray and get the color
 	RVec3 RayTrace(const RRay& InRay, int MaxBounceTimes = 10, const RenderOption& InOption = RenderOption()) const;
+
+	// Test a ray against the scene and find intersection result
+	int FindIntersectionWithScene(RRay TestRay, RayHitResult& OutResult) const;
 
 protected:
 	RVec3 CalculateLightColor(const LightData* InLight, const RayHitResult &InHitResult, const RVec3& InSurfaceColor) const;
