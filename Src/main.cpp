@@ -264,10 +264,18 @@ void FormatTimeString(char* Buffer, int BufferSize, int Milliseconds)
 	}
 }
 
+int DetectWorkerThreadsNum()
+{
+	int ThreadConcurrency = (int)std::thread::hardware_concurrency();
+	return Math::Max(ThreadConcurrency, 1);
+}
+
 void UpdateBitmapPixels()
 {
 	// Total number of worker threads
-	const int ThreadCount = 8;
+	const int ThreadCount = DetectWorkerThreadsNum();
+
+	RLog("Starting rendering tasks on %d threads...\n", ThreadCount);
 
 	RenderOption BaseColorOption;
 	BaseColorOption.UseBaseColor = true;
