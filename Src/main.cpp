@@ -23,6 +23,7 @@
 #include "RayTracerScene.h"
 
 #include "ThreadTaskQueue.h"
+#include "ThreadUtils.h"
 
 #include <vector>
 #include <chrono>
@@ -107,8 +108,11 @@ void DisplayThreadAndTime()
 	RLog("[Thread: %s][%d] ", ThreadName.c_str(), GetTimeInMillisecond());
 }
 
-//#define RLogThread(...)			{ DisplayThreadAndTime(); RLog(__VA_ARGS__); }
+#if 0
+#define RLogThread(...)			{ DisplayThreadAndTime(); RLog(__VA_ARGS__); }
+#else
 #define RLogThread(...)
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 // Log thread - End
@@ -118,13 +122,13 @@ RayTracerScene g_Scene;
 
 void SetupScene()
 {
-	g_Scene.AddShape(RSphere::Create(RVec3(0.0f, -1.0f, 2.0f), 1.0f), RMaterial(RVec3(1.0f, 0.5f, 0.1f), false, MT_Diffuse | MT_Reflective));
-	g_Scene.AddShape(RSphere::Create(RVec3(1.2f, 1.0f, 3.0f), 0.5f), RMaterial(RVec3(0.1f, 1.0f, 0.2f), false, MT_Diffuse));
-	g_Scene.AddShape(RSphere::Create(RVec3(0.2f, 1.2f, 1.0f), 0.5f), RMaterial(RVec3(0.5f, 0.0f, 0.2f), false, MT_Diffuse | MT_Reflective));
-	g_Scene.AddShape(RSphere::Create(RVec3(-2.8f, 1.2f, 4.0f), 1.5f), RMaterial(RVec3(0.95f, 0.75f, 0.1f), false, MT_Diffuse | MT_Reflective/*MT_Reflective*/));
-	g_Scene.AddShape(RSphere::Create(RVec3(0.0f, -5.0f, 0.0f), 0.5f), RMaterial(RVec3(50.0f, 50.0f, 60.0f), false, MT_Emissive));					// Ceiling light
-	g_Scene.AddShape(RCapsule::Create(RVec3(1.5f, 0.0f, 0.0f), RVec3(2.0f, 1.0f, 0.0f), 0.5f), RMaterial(RVec3(0.25f, 0.75f, 0.6f), false, MT_Diffuse | MT_Reflective));
-	g_Scene.AddShape(RPlane::Create(RVec3(0.0f, -1.0f, 0.0f), RVec3(0.0f, 2.5f, 0.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));			// Ground
+	g_Scene.AddShape(RSphere::Create(RVec3(0.0f, -2.3f, 2.0f), 0.9f), RMaterial(RVec3(1.0f, 0.5f, 0.1f), false, MT_Diffuse | MT_Reflective));
+	g_Scene.AddShape(RSphere::Create(RVec3(1.5f, -2.2f, 3.0f), 0.5f), RMaterial(RVec3(0.1f, 1.0f, 0.2f), false, MT_Diffuse));
+	g_Scene.AddShape(RSphere::Create(RVec3(0.2f, 1.8f, 1.0f), 0.5f), RMaterial(RVec3(0.5f, 0.0f, 0.2f), false, MT_Diffuse | MT_Reflective));
+	g_Scene.AddShape(RSphere::Create(RVec3(-2.8f, 1.2f, 4.0f), 1.5f), RMaterial(RVec3(0.95f, 0.75f, 0.1f), false, MT_Diffuse | MT_Reflective | MT_Emissive));
+	g_Scene.AddShape(RSphere::Create(RVec3(0.0f, -5.0f, 0.0f), 0.5f), RMaterial(RVec3(5.0f, 2.0f, 6.0f), false, MT_Emissive));					// Ceiling light
+	g_Scene.AddShape(RCapsule::Create(RVec3(1.5f, 0.5f, 0.0f), RVec3(2.0f, 1.5f, 0.0f), 0.5f), RMaterial(RVec3(0.25f, 0.75f, 0.6f), false, MT_Diffuse | MT_Reflective | MT_Emissive));
+	g_Scene.AddShape(RPlane::Create(RVec3(0.0f, -1.0f, 0.0f), RVec3(0.0f, 2.5f, 0.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse | MT_Reflective));			// Ground
 	g_Scene.AddShape(RPlane::Create(RVec3(0.0f, 1.0f, 0.0f), RVec3(0.0f, -5.0f, 0.0f)), RMaterial(RVec3(1.2f, 1.2f, 1.5f), false, MT_Diffuse));			// Ceiling / Sky light plane
 	g_Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, -1.0f), RVec3(0.0f, 0.0f, 5.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));			// Back wall
 	g_Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, 1.0f), RVec3(0.0f, 0.0f, -10.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));
@@ -144,6 +148,7 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 		float dy = (float)(y - bitmapWidth / 2) / (bitmapHeight * 2);
 
         RVec3 c = RVec3::Zero();
+		RVec3 ViewPoint(0, 0, -7);
         
 #if ENABLE_ANTIALIASING
 		float inv_pixel_width = 1.0f / (bitmapWidth * 4);
@@ -164,14 +169,14 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 			offset_y += (RMath::Random() - 0.5f) * offset;
 
 			RVec3 Dir(dx + offset_x, dy + offset_y, 0.5f);
-			RRay ray(RVec3(0, 0, -5), Dir.GetNormalizedVec3(), 1000.0f);
+			RRay ray(ViewPoint, Dir.GetNormalizedVec3(), 1000.0f);
 			c += g_Scene.RayTrace(ray, MaxBounceCount, InOption);
 		}
 
 		c /= 4.0f;
 #else
         RVec3 Dir(dx, dy, 0.5f);
-        RRay ray(RVec3(0, 0, -5), Dir.GetNormalizedVec3(), 1000.0f);
+        RRay ray(ViewPoint, Dir.GetNormalizedVec3(), 1000.0f);
         c = g_Scene.RayTrace(ray, MaxBounceCount, InOption);
 #endif  // ENABLE_ANTIALIASING
 
@@ -276,7 +281,7 @@ void UpdateBitmapPixels()
 	const int ThreadCount = DetectWorkerThreadsNum();
 
 	RLog("Starting rendering tasks on %d threads...\n", ThreadCount);
-	std::vector<std::thread> WorkerThreads;
+	ScopeAutoJoinedThreads WorkerThreads;
 
 	RenderOption BaseColorOption;
 	BaseColorOption.UseBaseColor = true;
@@ -285,7 +290,7 @@ void UpdateBitmapPixels()
 	for (int i = 0; i < ThreadCount; i++)
 	{
 		std::thread Worker(ThreadTaskWorker);
-		WorkerThreads.push_back(std::move(Worker));
+		WorkerThreads.AddThread(Worker);
 	}
 
 	// Draw base color for preview
@@ -305,6 +310,10 @@ void UpdateBitmapPixels()
 
 		// Wait until all threads finish their work of current sample
 		g_TaskQueue.WaitForAllTasksDone();
+
+#if 0
+		return;
+#endif
 	}
 
 	auto StartTime = std::chrono::system_clock::now();
@@ -353,12 +362,6 @@ void UpdateBitmapPixels()
 		{
 			break;
 		}
-	}
-
-	// Wait for all render threads to finish
-	for (auto& Thread : WorkerThreads)
-	{
-		Thread.join();
 	}
 }
 
