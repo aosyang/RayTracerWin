@@ -10,9 +10,6 @@
 #import "OSXRenderView.h"
 #import "OSXAppDelegate.h"
 
-#include <thread>
-#include <chrono>
-
 namespace
 {
     NSWindow* Window;
