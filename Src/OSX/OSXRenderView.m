@@ -34,7 +34,7 @@
                                      DataProvider, nil, NO,
                                      kCGRenderingIntentDefault);
     
-    CGRect DrawRect = CGRectMake(0, 0, self.ViewWidth, self.ViewHeight);
+    CGRect DrawRect = [[NSScreen mainScreen] convertRectFromBacking:CGRectMake(0, 0, self.ViewWidth, self.ViewHeight)];
     CGContextDrawImage(Context, DrawRect, Image);
     
     CGImageRelease(Image);

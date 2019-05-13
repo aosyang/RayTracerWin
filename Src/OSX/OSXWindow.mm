@@ -21,11 +21,16 @@ bool RenderWindow::Create(int width, int height, bool fullscreen, int bpp)
 {
     [NSApplication sharedApplication];
     
-    NSUInteger windowStyle = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable;
+    NSUInteger windowStyle = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable;
     
-    CGSize ScreenSize = [[NSScreen mainScreen] frame].size;
-    NSRect windowRect = NSMakeRect((ScreenSize.width - width)/2, (ScreenSize.height - height)/2, width, height);
+    NSScreen* MainScreen = [NSScreen mainScreen];
+    NSRect windowRect = [MainScreen convertRectFromBacking:NSMakeRect(0, 0, width, height)];
+    
+    // Create the render window
     Window = [[NSWindow alloc] initWithContentRect:windowRect styleMask:windowStyle backing:NSBackingStoreBuffered defer:NO];
+    
+    // Center the window to screen
+    [Window center];
     
     // Create custom view for rendering
     RenderView = [[OSXRenderView alloc] initWithFrame:windowRect];
