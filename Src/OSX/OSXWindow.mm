@@ -29,11 +29,15 @@ bool RenderWindow::Create(int width, int height, bool fullscreen, int bpp)
     // Create the render window
     Window = [[NSWindow alloc] initWithContentRect:windowRect styleMask:windowStyle backing:NSBackingStoreBuffered defer:NO];
     
-    // Center the window to screen
-    [Window center];
-    
     // Create custom view for rendering
     RenderView = [[OSXRenderView alloc] initWithFrame:windowRect];
+    
+    CGSize ScreenSize = [[NSScreen mainScreen] frame].size;
+    CGSize WindowSize = [RenderView convertSizeFromBacking:NSMakeSize(width, height)];
+    NSPoint TopLeft = NSMakePoint((ScreenSize.width - WindowSize.width) / 2, ScreenSize.height - (ScreenSize.height - WindowSize.height) / 2);
+
+    // Center the window to screen
+    [Window setFrameTopLeftPoint:TopLeft];
     
     // Tell window to use custom view
     [Window setContentView:RenderView];
