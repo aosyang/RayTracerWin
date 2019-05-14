@@ -41,4 +41,6 @@ typedef unsigned int UINT32;
 	// Print to output window
 	#define RLog(...)						{ printf(__VA_ARGS__); }
 
+    #define FORCEINLINE                     inline __attribute__ ((always_inline))
+
 #endif
