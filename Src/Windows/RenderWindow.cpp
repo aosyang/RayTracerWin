@@ -5,6 +5,7 @@
 //=============================================================================
 #include "RenderWindow.h"
 #include <tchar.h>
+#include "../RayTracerProgram.h"
 
 static const TCHAR s_WindowClassName[] = _T("RenderWindow");
 static const TCHAR s_WindowTitle[] = _T("Ray Tracer");
@@ -159,7 +160,7 @@ void RenderWindow::PresentRenderBuffer()
 	SetDIBitsToDevice(m_WindowDC, 0, 0, m_BufferWidth, m_BufferHeight, 0, 0, 0, m_BufferHeight, m_BufferData, &info, DIB_RGB_COLORS);
 }
 
-void RenderWindow::RunWindowLoop()
+void RenderWindow::RunWindowLoop(RayTracerProgram* Program)
 {
 	MSG msg;
 	bool quit = false;
@@ -182,20 +183,9 @@ void RenderWindow::RunWindowLoop()
 
 		Sleep(1);
 		PresentRenderBuffer();
-
-//		frame++;
-//		DWORD t = GetTickCount();
-//		if (t >= nextTick)
-//		{
-//			nextTick = t + 1000;
-//#if 0
-//			char buf[1024];
-//			sprintf_s(buf, "FPS: %d\n", frame);
-//			OutputDebugStringA(buf);
-//#endif
-//			frame = 0;
-//		}
 	}
+
+	Program->ExecuteCleanup();
 }
 
 LPCTSTR RenderWindow::GetTitle() const

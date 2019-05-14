@@ -13,9 +13,10 @@ template<typename T>
 class ThreadTaskQueue
 {
 public:
-	ThreadTaskQueue()
-		: bQuit(false)
+	static ThreadTaskQueue<T>& Get()
 	{
+		static ThreadTaskQueue<T> Instance;
+		return Instance;
 	}
 
 	// Add a task to task queue
@@ -60,6 +61,12 @@ public:
 		QueueCondition.wait(ThreadLock, [this] {
 			return EnqueuedTasks.size() == 0 || bQuit;
 		});
+	}
+
+protected:
+	ThreadTaskQueue()
+		: bQuit(false)
+	{
 	}
 
 private:

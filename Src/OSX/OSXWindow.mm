@@ -67,7 +67,7 @@ void RenderWindow::SetRenderBufferParameters(int BufferWidth, int BufferHeight, 
     RenderView.BufferData = (Byte*)BufferData;
 }
 
-void RenderWindow::RunWindowLoop()
+void RenderWindow::RunWindowLoop(RayTracerProgram* Program)
 {
     [NSApp run];
 }

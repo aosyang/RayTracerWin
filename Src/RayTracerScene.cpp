@@ -7,6 +7,7 @@
 #include "RayTracerScene.h"
 #include "Math.h"
 #include "Platform.h"
+#include "RayTracerProgram.h"
 
 #define USE_LIGHTS 0
 
@@ -17,7 +18,6 @@ LightData GSceneLights[] =
 };
 
 RayTracerScene::RayTracerScene()
-	: bExiting(false)
 {
 
 }
@@ -28,20 +28,10 @@ void RayTracerScene::AddShape(unique_ptr<RShape> Shape, RMaterial Material /*= R
 	SceneShapes.push_back(std::move(Shape));
 }
 
-void RayTracerScene::NotifyTerminatingProgram()
-{
-	bExiting = true;
-}
-
-bool RayTracerScene::IsTerminatingProgram() const
-{
-	return bExiting;
-}
-
 RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, const RenderOption& InOption /*= RenderOption()*/) const
 {
 	// Stop the recursion function when program is exiting
-	if (bExiting)
+	if (RayTracerProgram::GetActiveInstance().IsTerminating())
 	{
 		return RVec3(0, 0, 0);
 	}

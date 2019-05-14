@@ -7,6 +7,16 @@
 #include "ThreadUtils.h"
 
 #include <assert.h>
+#include "MathHelper.h"
+
+namespace ThreadUtils
+{
+	int DetectWorkerThreadsNum()
+	{
+		int ThreadConcurrency = (int)std::thread::hardware_concurrency();
+		return Math::Max(ThreadConcurrency, 1);
+	}
+}
 
 ScopeAutoJoinedThreads::~ScopeAutoJoinedThreads()
 {

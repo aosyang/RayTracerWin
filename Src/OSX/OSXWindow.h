@@ -6,6 +6,8 @@
 
 #pragma once
 
+class RayTracerProgram;
+
 class RenderWindow
 {
 public:
@@ -14,7 +16,7 @@ public:
     
     void SetRenderBufferParameters(int BufferWidth, int BufferHeight, void* BufferData);
     
-    void RunWindowLoop();
+    void RunWindowLoop(RayTracerProgram* Program);
     
     void SetTitle(const char* Title);
 };

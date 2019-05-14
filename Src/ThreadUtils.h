@@ -9,6 +9,11 @@
 #include <vector>
 #include <thread>
 
+namespace ThreadUtils
+{
+	int DetectWorkerThreadsNum();
+}
+
 // Collect a list of threads and join them when instance leaves the scope
 class ScopeAutoJoinedThreads
 {
