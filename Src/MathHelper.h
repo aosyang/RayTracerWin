@@ -38,6 +38,9 @@ namespace Math
 	const T& Min(const T& a, const T& b) { return (a < b) ? a : b; }
 
 	inline float Lerp(float a, float b, float t) { return a + (b - a) * t; }
+
+	template <typename T>
+	int Sgn(T val) { return (T(0) < val) - (val < T(0)); }
 }
 
 #endif

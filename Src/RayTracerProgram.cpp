@@ -116,23 +116,26 @@ void DisplayThreadAndTime()
 
 void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const RenderOption& InOption = RenderOption())
 {
+	const RVec3 ViewPoint(0, 0, -7);
+	const RayTracerScene* Scene = RayTracerProgram::GetActiveInstance().GetScene();
+	const float Aspect = (float)bitmapWidth / (float)bitmapHeight;
+
 	for (int PixelIndex = begin; PixelIndex < end; PixelIndex++)
 	{
 		int x, y;
 		BufferIndexToCoord(PixelIndex, x, y);
-		float dx = (float)(x - bitmapWidth / 2) / (bitmapWidth * 2);
-		float dy = (float)(y - bitmapWidth / 2) / (bitmapHeight * 2);
+		float dx = (float)(x - bitmapWidth / 2) / (bitmapWidth * 2) * Aspect;
+		float dy = (float)(y - bitmapHeight / 2) / (bitmapHeight * 2);
 
 		RVec3 c = RVec3::Zero();
-		RVec3 ViewPoint(0, 0, -7);
 
 #if ENABLE_ANTIALIASING
-		float inv_pixel_width = 1.0f / (bitmapWidth * 4);
+		static const float inv_pixel_radius = 1.0f / (bitmapWidth * 4);
 
-		float ox[4] = { 0.0f, inv_pixel_width, 0.0f, inv_pixel_width };
-		float oy[4] = { 0.0f, 0.0f, inv_pixel_width, inv_pixel_width };
+		static const float ox[4] = { 0.0f, inv_pixel_radius, 0.0f, inv_pixel_radius };
+		static const float oy[4] = { 0.0f, 0.0f, inv_pixel_radius, inv_pixel_radius };
 
-		const float offset = inv_pixel_width * 0.5f;
+		static const float offset_radius = inv_pixel_radius * 0.5f;
 
 		// Randomly sample 2x2 nearby pixels for antialiasing
 		for (int i = 0; i < 4; i++)
@@ -141,19 +144,19 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 			float offset_y = oy[i];
 
 			// Randomize sampling point
-			offset_x += (RMath::Random() - 0.5f) * offset;
-			offset_y += (RMath::Random() - 0.5f) * offset;
+			offset_x += (RMath::Random() - 0.5f) * offset_radius;
+			offset_y += (RMath::Random() - 0.5f) * offset_radius;
 
 			RVec3 Dir(dx + offset_x, dy + offset_y, 0.5f);
 			RRay ray(ViewPoint, Dir.GetNormalizedVec3(), 1000.0f);
-			c += RayTracerProgram::GetActiveInstance().GetScene()->RayTrace(ray, MaxBounceCount, InOption);
+			c += Scene->RayTrace(ray, MaxBounceCount, InOption);
 		}
 
 		c /= 4.0f;
 #else
 		RVec3 Dir(dx, dy, 0.5f);
 		RRay ray(ViewPoint, Dir.GetNormalizedVec3(), 1000.0f);
-		c = g_Scene.RayTrace(ray, MaxBounceCount, InOption);
+		c = Scene->RayTrace(ray, MaxBounceCount, InOption);
 #endif  // ENABLE_ANTIALIASING
 
 		if (InOption.UseBaseColor)

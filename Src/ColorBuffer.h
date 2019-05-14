@@ -65,6 +65,7 @@ inline BYTE GetUint32ColorBlue(UINT32 Color)
 #endif
 }
 
+// Convert linear color to gamma space color
 inline RVec3 LinearToGamma(const RVec3& color)
 {
 	static const float exponent = 1.0f / 2.2f;
@@ -75,6 +76,18 @@ inline RVec3 LinearToGamma(const RVec3& color)
 	);
 }
 
+// Convert signed linear color to signed gamma space color (same as LinearToGamma, but allows negative colors)
+inline RVec3 LinearToGammaSigned(const RVec3& color)
+{
+	static const float exponent = 1.0f / 2.2f;
+	return RVec3(
+		Math::Sgn(color.x) * powf(fabs(color.x), exponent),
+		Math::Sgn(color.y) * powf(fabs(color.y), exponent),
+		Math::Sgn(color.z) * powf(fabs(color.z), exponent)
+	);
+}
+
+// Pack rgb color to 32 bit
 inline UINT32 MakePixelColor(const RVec3& color)
 {
     int r = int(Math::Min(Math::Max(color.x, 0.0f), 1.0f) * 255);
