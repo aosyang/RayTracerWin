@@ -16,6 +16,9 @@ ENDIF()
 IF(WIN32)
     FILE(GLOB SOURCES_PLATFORM Src/Windows/*.cpp Src/Windows/*.h)
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /fp:fast" )
+
+	# Multi-processor compilation support
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 ENDIF()
 
 ADD_EXECUTABLE(RayTracer WIN32 MACOSX_BUNDLE ${SOURCES} ${SOURCES_PLATFORM})
