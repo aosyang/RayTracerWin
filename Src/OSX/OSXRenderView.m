@@ -22,7 +22,7 @@
     CGColorSpaceRef ColorSpace = CGColorSpaceCreateDeviceRGB();
     
     // Create data provider from pixel data
-    CGDataProviderRef DataProvider = CGDataProviderCreateWithData(nil, self.BufferData, self.ViewWidth * self.ViewHeight, nil);
+    CGDataProviderRef DataProvider = CGDataProviderCreateWithData(nil, self.BufferData, BYTES_PER_PIXEL * self.ViewWidth * self.ViewHeight, nil);
     
     CGImageRef Image = CGImageCreate(self.ViewWidth,
                                      self.ViewHeight,
@@ -30,7 +30,7 @@
                                      BITS_PER_PIXEL,
                                      BYTES_PER_PIXEL * self.ViewWidth,
                                      ColorSpace,
-                                     kCGBitmapByteOrder32Little,
+                                     kCGBitmapByteOrder32Little|kCGImageAlphaNoneSkipLast,
                                      DataProvider, nil, NO,
                                      kCGRenderingIntentDefault);
     

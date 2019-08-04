@@ -17,6 +17,8 @@ using std::unique_ptr;
 class RShape
 {
 public:
+    virtual ~RShape() {}
+    
 	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const { return false; }
 
 	// Assign material to the shape
