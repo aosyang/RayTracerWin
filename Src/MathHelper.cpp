@@ -5,6 +5,7 @@
 //=============================================================================
 
 #include "MathHelper.h"
+#include "Platform.h"
 
 #include <stdlib.h>
 
@@ -29,7 +30,7 @@ namespace Math
         
         union {
             float f;
-            uint32_t i;
+            UINT32 i;
         } conv = {number}; // member 'f' set to value of 'number'.
         conv.i  = 0x5f3759df - ( conv.i >> 1 );
         conv.f  *= ( threehalfs - ( x2 * conv.f * conv.f ) );
