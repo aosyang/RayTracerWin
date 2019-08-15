@@ -12,41 +12,64 @@
 #include <string>
 #include <sstream>
 
-static std::string GetLineKeyword(const std::string& Line)
+using namespace std;
+
+#define USE_KDTREE 1
+
+namespace
 {
-	std::string Keyword;
-
-	size_t SpacePos = Line.find(' ');
-	if (SpacePos != std::string::npos)
-	{
-		return Line.substr(0, SpacePos);
-	}
-
-	return Line;
-}
-
-static int GetNthNumericValue(int n, const std::string& Line)
-{
-	std::stringstream LineStream(Line);
-	int value;
-	char dummy;
-	for (int i = 0; i <= n; i++)
-	{
-		LineStream >> value >> dummy;
-	}
-	return value;
+    // Get the identifier string of a line (string before the first space)
+    string GetLineKeyword(const string& Line)
+    {
+        string Keyword;
+        
+        size_t SpacePos = Line.find(' ');
+        if (SpacePos != string::npos)
+        {
+            return Line.substr(0, SpacePos);
+        }
+        
+        return Line;
+    }
+    
+    // Get the nth number from a line
+    int GetNthNumericValue(int n, const string& Line)
+    {
+        stringstream LineStream(Line);
+        int value;
+        char dummy;
+        for (int i = 0; i <= n; i++)
+        {
+            LineStream >> value >> dummy;
+        }
+        return value;
+    }
+    
+    // Split a string by a given delimeter
+    vector<string> Split(const string& Input, char Delimiter)
+    {
+        vector<string> tokens;
+        string token;
+        istringstream tokenStream(Input);
+        while (getline(tokenStream, token, Delimiter))
+        {
+            tokens.push_back(token);
+        }
+        
+        return tokens;
+    }
 }
 
 RMeshShape::RMeshShape(const char* Filename)
 {
-	std::ifstream InputFile(Filename);
+	ifstream InputFile(Filename);
 	
 	if (!InputFile.is_open())
 	{
 		// If file is not found, search an alternative path for it.
 		char AlterPath[1024];
 		RPrintf(AlterPath, sizeof(AlterPath), "../%s", Filename);
-		InputFile = std::ifstream(AlterPath);
+		InputFile = ifstream(AlterPath);
 
 		if (!InputFile.is_open())
 		{
@@ -55,15 +78,15 @@ RMeshShape::RMeshShape(const char* Filename)
 		}
 	}
 
-	std::string Line;
-	while (std::getline(InputFile, Line))
+	string Line;
+	while (getline(InputFile, Line))
 	{
-		std::string key = GetLineKeyword(Line);
-		std::string dummy;
+		string key = GetLineKeyword(Line);
+		string dummy;
 
 		if (key == "v")
 		{
-			std::stringstream LineStream(Line);
+			stringstream LineStream(Line);
 			float Pos[3];
 			LineStream >> dummy >> Pos[0] >> Pos[1] >> Pos[2];
 
@@ -76,25 +99,43 @@ RMeshShape::RMeshShape(const char* Filename)
 		}
 		else if (key == "vn")
 		{
-			std::stringstream LineStream(Line);
+			stringstream LineStream(Line);
 			float n[3];
 			LineStream >> dummy >> n[0] >> n[1] >> n[2];
 			Normals.push_back(RVec3(n));
 		}
 		else if (key == "f")
 		{
-			std::stringstream LineStream(Line);
-			std::string IndexString[3];
-			LineStream >> dummy >> IndexString[0] >> IndexString[1] >> IndexString[2];
-
-			for (int i = 0; i < 3; i++)
-			{
-				int PointIndex = GetNthNumericValue(0, IndexString[i]) - 1;
-				PointIndices.push_back(PointIndex);
-
-				int NormalIndex = GetNthNumericValue(2, IndexString[i]) - 1;
-				NormalIndices.push_back(NormalIndex);
-			}
+            // Note: the first token will be the key
+            auto Tokens = Split(Line, ' ');
+            int NumPolyVerts = Tokens.size() - 1;
+            const vector<int>* PolyIndexArray = nullptr;
+            
+            if (NumPolyVerts == 3)      // A triangle poly
+            {
+                static const vector<int> TriangleIndex{ 0, 1, 2 };
+                PolyIndexArray = &TriangleIndex;
+            }
+            else if (NumPolyVerts == 4) // A quad poly
+            {
+                // Split a quad into two triangle
+                static const vector<int> QuadIndex{ 0, 1, 2, 0, 2, 3 };
+                PolyIndexArray = &QuadIndex;
+            }
+            
+            if (PolyIndexArray != nullptr)
+            {
+                for (int i = 0; i < (int)PolyIndexArray->size(); i++)
+                {
+                    int Index = (*PolyIndexArray)[i] + 1;
+                    
+                    int PointIndex = GetNthNumericValue(0, Tokens[Index]) - 1;
+                    PointIndices.push_back(PointIndex);
+                    
+                    int NormalIndex = GetNthNumericValue(2, Tokens[Index]) - 1;
+                    NormalIndices.push_back(NormalIndex);
+                }
+            }
 		}
 	}
 
@@ -114,13 +155,13 @@ RMeshShape::RMeshShape(const char* Filename)
 		FaceNormals.push_back(Normal);
 	}
 
-	Spatial = std::unique_ptr<KdTree>(new KdTree());
+	Spatial = unique_ptr<KdTree>(new KdTree());
 	Spatial->Build(Points.data(), PointIndices.data(), (int)PointIndices.size());
 }
 
 bool RMeshShape::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= nullptr*/) const
 {
-#if 1
+#if USE_KDTREE
 	if (Spatial)
 	{
 		int TriangleIndex = -1;
@@ -175,5 +216,5 @@ bool RMeshShape::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult 
 	}
 
 	return bResult;
-#endif
+#endif  // if USE_KDTREE
 }
