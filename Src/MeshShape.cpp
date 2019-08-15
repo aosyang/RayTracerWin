@@ -183,7 +183,8 @@ bool RMeshShape::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult 
 				float u, v, w;
 				RMath::Barycentric(p, a, b, c, u, v, w);
 
-				OutResult->HitNormal = (n0 * u + n1 * v + n2 * w).GetNormalizedVec3();
+                // Use fast inverse square root for approximating normal direction
+				OutResult->HitNormal = (n0 * u + n1 * v + n2 * w).GetNormalizedVec3_Fast();
 			}
 
 			return true;

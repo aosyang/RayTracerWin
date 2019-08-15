@@ -10,6 +10,9 @@
 
 #define PLATFORM_OSX 1
 typedef unsigned int UINT32;
+
+static_assert(sizeof(UINT32) == 4, "UINT32 must be 4 bytes");
+
 #define ARRAYSIZE(x) (sizeof(x)/sizeof(x[0]))
 
 #elif _WIN32

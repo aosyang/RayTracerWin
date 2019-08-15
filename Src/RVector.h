@@ -167,7 +167,7 @@ public:
 		if (!FLT_EQUAL_ZERO(sqr_mag))
 		{
             RVec3 n = *this;
-            float one_over_mag = Math::Q_rsqrt(sqr_mag);
+            float one_over_mag = 1.0f / sqrtf(sqr_mag);
 			n.x *= one_over_mag;
 			n.y *= one_over_mag;
 			n.z *= one_over_mag;
@@ -176,6 +176,22 @@ public:
 		}
 		return *this;
 	}
+    
+    RVec3 GetNormalizedVec3_Fast() const
+    {
+        float sqr_mag = x * x + y * y + z * z;
+        if (!FLT_EQUAL_ZERO(sqr_mag))
+        {
+            RVec3 n = *this;
+            float one_over_mag = Math::Q_rsqrt(sqr_mag);
+            n.x *= one_over_mag;
+            n.y *= one_over_mag;
+            n.z *= one_over_mag;
+            
+            return n;
+        }
+        return *this;
+    }
 
 	// Dot product
 	float Dot(const RVec3& rhs) const
