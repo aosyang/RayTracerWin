@@ -15,13 +15,15 @@ typedef unsigned char BYTE;
 const int bitmapWidth = 800;
 const int bitmapHeight = 800;
 
-inline void BufferIndexToCoord(int idx, int& x, int& y)
+// Convert buffer array index to 2d coordinate
+FORCEINLINE void BufferIndexToCoord(int idx, int& x, int& y)
 {
 	x = idx % bitmapWidth;
 	y = idx / bitmapWidth;
 }
 
-inline int CoordToBufferIndex(int x, int y)
+// Convert 2d coordinate to buffer array index
+FORCEINLINE int CoordToBufferIndex(int x, int y)
 {
 	if (x < 0 || x >= bitmapWidth || y < 0 || y >= bitmapHeight)
 		return -1;
@@ -29,7 +31,7 @@ inline int CoordToBufferIndex(int x, int y)
 	return y * bitmapWidth + x;
 }
 
-inline UINT32 MakeUint32Color(BYTE _r, BYTE _g, BYTE _b, BYTE _a)
+FORCEINLINE UINT32 MakeUint32Color(BYTE _r, BYTE _g, BYTE _b, BYTE _a)
 {
 #if (PLATFORM_OSX)
 	return (_r << 24 | _g << 16 | _b << 8 | _a);
@@ -38,7 +40,7 @@ inline UINT32 MakeUint32Color(BYTE _r, BYTE _g, BYTE _b, BYTE _a)
 #endif
 }
 
-inline BYTE GetUint32ColorRed(UINT32 Color)
+FORCEINLINE BYTE GetUint32ColorRed(UINT32 Color)
 {
 #if (PLATFORM_OSX)
 	return (BYTE)((Color >> 24) & 0xFF);
@@ -47,7 +49,7 @@ inline BYTE GetUint32ColorRed(UINT32 Color)
 #endif
 }
 
-inline BYTE GetUint32ColorGreen(UINT32 Color)
+FORCEINLINE BYTE GetUint32ColorGreen(UINT32 Color)
 {
 #if (PLATFORM_OSX)
 	return (BYTE)((Color >> 16) & 0xFF);
@@ -56,7 +58,7 @@ inline BYTE GetUint32ColorGreen(UINT32 Color)
 #endif
 }
 
-inline BYTE GetUint32ColorBlue(UINT32 Color)
+FORCEINLINE BYTE GetUint32ColorBlue(UINT32 Color)
 {
 #if (PLATFORM_OSX)
 	return (BYTE)((Color >> 8) & 0xFF);
@@ -66,7 +68,7 @@ inline BYTE GetUint32ColorBlue(UINT32 Color)
 }
 
 // Convert linear color to gamma space color
-inline RVec3 LinearToGamma(const RVec3& color)
+FORCEINLINE RVec3 LinearToGamma(const RVec3& color)
 {
 	static const float exponent = 1.0f / 2.2f;
 	return RVec3(
@@ -77,7 +79,7 @@ inline RVec3 LinearToGamma(const RVec3& color)
 }
 
 // Convert signed linear color to signed gamma space color (same as LinearToGamma, but allows negative colors)
-inline RVec3 LinearToGammaSigned(const RVec3& color)
+FORCEINLINE RVec3 LinearToGammaSigned(const RVec3& color)
 {
 	static const float exponent = 1.0f / 2.2f;
 	return RVec3(
@@ -88,7 +90,7 @@ inline RVec3 LinearToGammaSigned(const RVec3& color)
 }
 
 // Pack rgb color to 32 bit
-inline UINT32 MakePixelColor(const RVec3& color)
+FORCEINLINE UINT32 MakePixelColor(const RVec3& color)
 {
     int r = int(Math::Min(Math::Max(color.x, 0.0f), 1.0f) * 255);
 	int g = int(Math::Min(Math::Max(color.y, 0.0f), 1.0f) * 255);

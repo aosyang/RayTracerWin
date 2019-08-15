@@ -133,6 +133,16 @@ public:
 	RVec3& operator-=(const RVec3& rhs)								{ x -= rhs.x; y -= rhs.y; z -= rhs.z; return *this; }
 	RVec3& operator*=(float val)									{ x *= val; y *= val; z *= val; return *this; }
 	RVec3& operator/=(float val)									{ x /= val; y /= val; z /= val; return *this; }
+    
+    bool operator==(const RVec3& rhs) const
+    {
+        return x == rhs.x && y == rhs.y && z == rhs.z;
+    }
+    
+    bool operator!=(const RVec3& rhs) const
+    {
+        return x != rhs.x || y != rhs.y || z != rhs.z;
+    }
 
 	float SquaredMagitude() const
 	{
