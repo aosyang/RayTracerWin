@@ -78,7 +78,7 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
 			if (Material.MaterialFlags & MT_Diffuse)
 			{
 				FinalColor += SurfaceColor;
-				FinalColor *= RVec3::Dot(Result.HitNormal, RVec3(0, -1, 0)) * 0.5f + 0.5f;
+				FinalColor *= RVec3::Dot(Result.HitNormal, RVec3(0, 1, 0)) * 0.5f + 0.5f;
 			}
 
 			if (Material.MaterialFlags & MT_Emissive)

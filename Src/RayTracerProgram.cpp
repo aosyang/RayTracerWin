@@ -124,8 +124,8 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 	{
 		int x, y;
 		BufferIndexToCoord(PixelIndex, x, y);
-		float dx = (float)(x - bitmapWidth / 2) / (bitmapWidth * 2) * Aspect;
-		float dy = (float)(y - bitmapHeight / 2) / (bitmapHeight * 2);
+		float dx = -(float)(x - bitmapWidth / 2) / (bitmapWidth * 2) * Aspect;
+		float dy = -(float)(y - bitmapHeight / 2) / (bitmapHeight * 2);
 
 		RVec3 c = RVec3::Zero();
 
