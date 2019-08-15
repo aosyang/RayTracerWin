@@ -158,27 +158,23 @@ public:
 	// Make unit vector
 	void Normalize()
 	{
-		float mag = Magnitude();
-		if (!FLT_EQUAL_ZERO(mag))
-		{
-			x /= mag;
-			y /= mag;
-			z /= mag;
-		}
+        *this = GetNormalizedVec3();
 	}
 
 	RVec3 GetNormalizedVec3() const
 	{
-		float mag = Magnitude();
-		RVec3 n = *this;
-		if (!FLT_EQUAL_ZERO(mag))
+		float sqr_mag = x * x + y * y + z * z;
+		if (!FLT_EQUAL_ZERO(sqr_mag))
 		{
-			float one_over_mag = 1.0f / mag;
+            RVec3 n = *this;
+            float one_over_mag = Math::Q_rsqrt(sqr_mag);
 			n.x *= one_over_mag;
 			n.y *= one_over_mag;
 			n.z *= one_over_mag;
+            
+            return n;
 		}
-		return n;
+		return *this;
 	}
 
 	// Dot product

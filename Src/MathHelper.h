@@ -41,6 +41,10 @@ namespace Math
 
 	template <typename T>
 	int Sgn(T val) { return (T(0) < val) - (val < T(0)); }
+    
+    // Fast inverse square root
+    // https://en.wikipedia.org/wiki/Fast_inverse_square_root
+    float Q_rsqrt(float number);
 }
 
 #endif
