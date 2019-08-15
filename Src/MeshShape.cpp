@@ -90,9 +90,6 @@ RMeshShape::RMeshShape(const char* Filename)
 			float Pos[3];
 			LineStream >> dummy >> Pos[0] >> Pos[1] >> Pos[2];
 
-			// Hack: Move mesh away from camera
-			Pos[2] += 1.0f;
-
 			RVec3 Vertex(Pos);
 			Points.push_back(Vertex);
 			Aabb.Expand(Vertex);
@@ -186,7 +183,7 @@ bool RMeshShape::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult 
 				float u, v, w;
 				RMath::Barycentric(p, a, b, c, u, v, w);
 
-				OutResult->HitNormal = n0 * u + n1 * v + n2 * w;
+				OutResult->HitNormal = (n0 * u + n1 * v + n2 * w).GetNormalizedVec3();
 			}
 
 			return true;
