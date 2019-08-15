@@ -108,7 +108,7 @@ RMeshShape::RMeshShape(const char* Filename)
 		{
             // Note: the first token will be the key
             auto Tokens = Split(Line, ' ');
-            int NumPolyVerts = Tokens.size() - 1;
+            int NumPolyVerts = (int)Tokens.size() - 1;
             const vector<int>* PolyIndexArray = nullptr;
             
             if (NumPolyVerts == 3)      // A triangle poly
