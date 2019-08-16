@@ -16,11 +16,6 @@ pMax(-FLT_MAX, -FLT_MAX, -FLT_MAX)
 {
 }
 
-bool RAabb::IsValid() const
-{
-    return pMax.x >= pMin.x && pMax.y >= pMin.y && pMax.z >= pMin.z;
-}
-
 bool RAabb::TestPointInsideAabb(const RVec3& point) const
 {
     if (pMax.x <= point.x || pMin.x >= point.x)

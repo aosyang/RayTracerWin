@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "Platform.h"
 #include "RVector.h"
 
 class RAabb
@@ -59,4 +60,9 @@ public:
     
     static RAabb Default;
 };
+
+FORCEINLINE bool RAabb::IsValid() const
+{
+	return pMax.x >= pMin.x && pMax.y >= pMin.y && pMax.z >= pMin.z;
+}
 

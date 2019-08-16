@@ -5,6 +5,7 @@
 //=============================================================================
 
 #include "RRay.h"
+#include <assert.h>
 
 RRay::RRay()
 {
@@ -86,8 +87,7 @@ bool RRay::TestIntersectionWithPlane(const RVec3& PlaneNormal, const RVec3& Poin
 
 bool RRay::TestIntersectionWithAabb(const RAabb& aabb, float* t/*=nullptr*/) const
 {
-    if (!aabb.IsValid())
-        return false;
+	assert(aabb.IsValid());
 
     float tmin = -FLT_MAX, tmax = FLT_MAX;
 
