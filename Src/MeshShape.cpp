@@ -36,7 +36,7 @@ namespace
     int GetNthNumericValue(int n, const string& Line)
     {
         stringstream LineStream(Line);
-        int value;
+        int value = -1;
         char dummy;
         for (int i = 0; i <= n; i++)
         {
@@ -45,7 +45,7 @@ namespace
         return value;
     }
     
-    // Split a string by a given delimeter
+    // Split a string by a given delimiter
     vector<string> Split(const string& Input, char Delimiter)
     {
         vector<string> tokens;
