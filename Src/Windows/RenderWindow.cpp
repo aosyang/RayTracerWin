@@ -181,7 +181,7 @@ void RenderWindow::RunWindowLoop(RayTracerProgram* Program)
 			}
 		}
 
-		Sleep(1);
+		Sleep(10);
 		PresentRenderBuffer();
 	}
 
