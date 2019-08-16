@@ -120,7 +120,7 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const Rend
 	const RayTracerScene* Scene = RayTracerProgram::GetActiveInstance().GetScene();
 	const float Aspect = (float)bitmapWidth / (float)bitmapHeight;
 
-	for (int PixelIndex = begin; PixelIndex < end; PixelIndex++)
+	for (int PixelIndex = begin; PixelIndex <= end; PixelIndex++)
 	{
 		int x, y;
 		BufferIndexToCoord(PixelIndex, x, y);
@@ -261,6 +261,8 @@ void UpdateBitmapPixels()
 
 	RenderOption BaseColorOption;
 	BaseColorOption.UseBaseColor = true;
+	const int MaxBufferIdx = bitmapHeight * bitmapWidth - 1;
+	const int NumTaskRows = 10;
 
 	// Start all worker threads
 	for (int i = 0; i < ThreadCount; i++)
@@ -272,12 +274,12 @@ void UpdateBitmapPixels()
 	// Draw base color for preview
 	{
 		// Split rendering area to tasks
-		for (int i = 0; i < bitmapHeight; i++)
+		for (int i = 0; i < bitmapHeight; i += NumTaskRows)
 		{
 			//RLog("Creating task [%d/%d]...\n", i + 1, bitmapHeight);
 
 			int Start = i * bitmapWidth;
-			int End = (i + 1) * bitmapWidth - 1;
+			int End = Math::Min((i + NumTaskRows) * bitmapWidth - 1, MaxBufferIdx);
 
 			TaskQueue.PushTask(RenderThreadTask(Start, End, BaseColorOption));
 		}
@@ -298,11 +300,11 @@ void UpdateBitmapPixels()
 	for (int Sample = 0; Sample < TotalSamplesNum; Sample++)
 	{
 		// Split rendering area to tasks
-		for (int i = 0; i < bitmapHeight; i++)
+		for (int i = 0; i < bitmapHeight; i += NumTaskRows)
 		{
 			// One task covers rendering a single line from left to right
 			int Start = i * bitmapWidth;
-			int End = (i + 1) * bitmapWidth - 1;
+			int End = Math::Min((i + NumTaskRows) * bitmapWidth - 1, MaxBufferIdx);
 
 			TaskQueue.PushTask(RenderThreadTask(Start, End, RenderOption()));
 		}
