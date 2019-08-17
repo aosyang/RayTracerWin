@@ -92,6 +92,11 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
 			{
 				FinalColor += SurfaceColor;
 			}
+
+			if (SurfaceMaterial)
+			{
+				FinalColor += SurfaceMaterial->PreviewColor(Result);
+			}
 		}
 		else
 		{
