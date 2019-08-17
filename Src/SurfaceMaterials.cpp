@@ -77,8 +77,9 @@ bool SurfaceMaterial_DiffuseChecker::IsBrighterArea(const RVec3& WorldPosition) 
 	return bResult;
 }
 
-SurfaceMaterial_Reflective::SurfaceMaterial_Reflective(const RVec3 InAlbedo /*= RVec3(1.0f, 1.0f, 1.0f)*/)
+SurfaceMaterial_Reflective::SurfaceMaterial_Reflective(const RVec3 InAlbedo /*= RVec3(1.0f, 1.0f, 1.0f)*/, float InFuzziness /*= 0.0f*/)
 	: Albedo(InAlbedo)
+	, Fuzziness(InFuzziness)
 {
 }
 
@@ -94,6 +95,13 @@ RVec3 SurfaceMaterial_Reflective::BounceViewRay(const RRay& InViewRay, const Ray
 
 	// The direction of reflection
 	RVec3 newDir = InViewRay.Direction.Reflect(HitResult.HitNormal);
+
+	if (Fuzziness > 0.0f)
+	{
+		newDir += RMath::RandomUnitVector() * Fuzziness;
+		newDir.Normalize();
+	}
+
 	OutViewRay = RRay(HitResult.HitPosition + newDir * 0.001f, newDir, RayDistance);
 
 	return Albedo;

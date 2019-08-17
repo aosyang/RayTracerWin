@@ -55,12 +55,13 @@ private:
 class SurfaceMaterial_Reflective : public ISurfaceMaterial
 {
 public:
-	SurfaceMaterial_Reflective(const RVec3 InAlbedo = RVec3(1.0f, 1.0f, 1.0f));
+	SurfaceMaterial_Reflective(const RVec3 InAlbedo = RVec3(1.0f, 1.0f, 1.0f), float InFuzziness = 0.0f);
 
 	virtual RVec3 BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const override;
 	virtual RVec3 PreviewColor(const RayHitResult& HitResult) const override;
 private:
 	RVec3 Albedo;
+	float Fuzziness;
 };
 
 /// A blend material is used to blend two types of surface materials
