@@ -87,5 +87,5 @@ public:
 	}
 
 	virtual RVec3 BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const override;
-	virtual RVec3 PreviewColor(const RayHitResult& HitResult) const = 0;
+	virtual RVec3 PreviewColor(const RayHitResult& HitResult) const;
 };
