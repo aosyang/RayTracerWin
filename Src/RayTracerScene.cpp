@@ -60,25 +60,6 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
 
 		RVec3 SurfaceColor = Material.Color;
 
-		// Make checkerboard pattern
-		if (Material.UseCheckerboardPattern)
-		{
-			bool color = false;
-			float fx = Result.HitPosition.x * 0.2f;
-			float fy = Result.HitPosition.y * 0.2f;
-			float fz = Result.HitPosition.z * 0.2f;
-
-			if (fx - floorf(fx) > 0.5f)
-				color = !color;
-			if (fz - floorf(fz) > 0.5f)
-				color = !color;
-			if (fy - floorf(fy) > 0.5f)
-				color = !color;
-
-			if (!color)
-				SurfaceColor *= 0.5f;
-		}
-
 		if (InOption.UseBaseColor)
 		{
 			// Base color render pass for previewing

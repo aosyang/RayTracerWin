@@ -35,10 +35,51 @@ RVec3 SurfaceMaterial_Diffuse::PreviewColor(const RayHitResult& HitResult) const
 	return Albedo * (RVec3::Dot(HitResult.HitNormal, RVec3(0, 1, 0)) * 0.5f + 0.5f);
 }
 
+SurfaceMaterial_DiffuseChecker::SurfaceMaterial_DiffuseChecker(const RVec3 InAlbedo /*= RVec3(1.0f, 1.0f, 1.0f)*/)
+	: SurfaceMaterial_Diffuse(InAlbedo)
+{
+}
+
+RVec3 SurfaceMaterial_DiffuseChecker::BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const
+{
+	float Factor = IsBrighterArea(HitResult.HitPosition) ? 1.0f : 0.5f;
+	return SurfaceMaterial_Diffuse::BounceViewRay(InViewRay, HitResult, OutViewRay) * Factor;
+}
+
+RVec3 SurfaceMaterial_DiffuseChecker::PreviewColor(const RayHitResult& HitResult) const
+{
+	float Factor = IsBrighterArea(HitResult.HitPosition) ? 1.0f : 0.5f;
+	return SurfaceMaterial_Diffuse::PreviewColor(HitResult) * Factor;
+}
+
+bool SurfaceMaterial_DiffuseChecker::IsBrighterArea(const RVec3& WorldPosition) const
+{
+	bool bResult = false;
+	float fx = WorldPosition.x * 0.2f;
+	float fy = WorldPosition.y * 0.2f;
+	float fz = WorldPosition.z * 0.2f;
+
+	if (fx - floorf(fx) > 0.5f)
+	{
+		bResult = !bResult;
+	}
+
+	if (fz - floorf(fz) > 0.5f)
+	{
+		bResult = !bResult;
+	}
+
+	if (fy - floorf(fy) > 0.5f)
+	{
+		bResult = !bResult;
+	}
+
+	return bResult;
+}
+
 SurfaceMaterial_Reflective::SurfaceMaterial_Reflective(const RVec3 InAlbedo /*= RVec3(1.0f, 1.0f, 1.0f)*/)
 	: Albedo(InAlbedo)
 {
-
 }
 
 RVec3 SurfaceMaterial_Reflective::BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const

@@ -407,12 +407,40 @@ void RayTracerProgram::SetupScene()
 	Scene.AddShape(RCapsule::Create(RVec3(-1.5f, -0.5f, 0.0f), RVec3(-2.0f, -1.5f, 0.0f), 0.5f), RMaterial(RVec3(0.25f, 0.75f, 0.6f), false, MT_Diffuse | MT_Reflective | MT_Emissive));
 
 	// Walls
-	Scene.AddShape(RPlane::Create(RVec3(0.0f, 1.0f, 0.0f), RVec3(0.0f, -2.5f, 0.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse | MT_Reflective));			// Ground
-	Scene.AddShape(RPlane::Create(RVec3(0.0f, -1.0f, 0.0f), RVec3(0.0f, 5.0f, 0.0f)), RMaterial(RVec3(1.2f, 1.2f, 1.5f), false, MT_Diffuse));			// Ceiling / Sky light plane
-	Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, -1.0f), RVec3(0.0f, 0.0f, 5.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));			// Back wall
-	Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, 1.0f), RVec3(0.0f, 0.0f, -10.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));
-	Scene.AddShape(RPlane::Create(RVec3(1.0f, 0.0f, 0.0f), RVec3(-5.0f, 0.0f, 0.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));			// Right wall
-	Scene.AddShape(RPlane::Create(RVec3(-1.0f, 0.0f, 0.0f), RVec3(5.0f, 0.0f, 0.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));			// Left wall
+	{
+		// Ground
+		Scene.AddShape(RPlane::Create(RVec3(0.0f, 1.0f, 0.0f), RVec3(0.0f, -2.5f, 0.0f)),
+			std::make_unique<SurfaceMaterial_Blend>(
+				std::make_unique<SurfaceMaterial_Reflective>(),
+				std::make_unique<SurfaceMaterial_DiffuseChecker>(),
+				0.5f)
+		);
+
+		// Ceiling / Sky light plane
+		Scene.AddShape(RPlane::Create(RVec3(0.0f, -1.0f, 0.0f), RVec3(0.0f, 5.0f, 0.0f)),
+			std::make_unique<SurfaceMaterial_Diffuse>(RVec3(1.2f, 1.2f, 1.5f))
+		);
+
+		// Back wall
+		Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, -1.0f), RVec3(0.0f, 0.0f, 5.0f)),
+			std::make_unique<SurfaceMaterial_DiffuseChecker>()
+		);
+
+		// Front wall (behind the camera)
+		Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, 1.0f), RVec3(0.0f, 0.0f, -10.0f)),
+			std::make_unique<SurfaceMaterial_DiffuseChecker>()
+		);
+
+		// Right wall
+		Scene.AddShape(RPlane::Create(RVec3(1.0f, 0.0f, 0.0f), RVec3(-5.0f, 0.0f, 0.0f)),
+			std::make_unique<SurfaceMaterial_DiffuseChecker>()
+		);
+
+		// Left wall
+		Scene.AddShape(RPlane::Create(RVec3(-1.0f, 0.0f, 0.0f), RVec3(5.0f, 0.0f, 0.0f)),
+			std::make_unique<SurfaceMaterial_DiffuseChecker>()
+		);
+	}
 
 	// Meshes
 	Scene.AddShape(RMeshShape::Create("../Data/TorusKnot.obj"),
