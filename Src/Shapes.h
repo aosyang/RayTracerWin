@@ -7,7 +7,6 @@
 
 #include "RVector.h"
 #include "RRay.h"
-#include "Material.h"
 #include "SurfaceMaterials.h"
 
 #include <memory>
@@ -22,13 +21,10 @@ public:
     
 	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult = nullptr) const { return false; }
 
-	// Assign material to the shape
-	void SetMaterial(RMaterial Material);
-
-	// Get material of the shape
-	const RMaterial& GetMaterial() const;
-
+	// Assign a surface material to the shape
 	void SetSurfaceMaterial(unique_ptr<ISurfaceMaterial> InMaterial);
+
+	// Get the surface material of the shape
 	ISurfaceMaterial* GetSurfaceMaterial();
 
 	// Whether to run aabb culling on this shape
@@ -41,9 +37,7 @@ protected:
 	// World bounding box of the shape
     RAabb Aabb;
 
-	// Material used by the shape
-	RMaterial ShapeMaterial;
-
+	// The surface material used by the shape
 	unique_ptr<ISurfaceMaterial> SurfaceMaterial;
 };
 

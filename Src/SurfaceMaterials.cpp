@@ -15,7 +15,7 @@ SurfaceMaterial_Diffuse::SurfaceMaterial_Diffuse(const RVec3 InAlbedo /*= RVec3(
 {
 }
 
-RVec3 SurfaceMaterial_Diffuse::BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const
+ViewRayBounceResult SurfaceMaterial_Diffuse::BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const
 {
 	// The remaining distance ray will travel
 	float RayDistance = InViewRay.Distance - HitResult.Distance;
@@ -27,7 +27,7 @@ RVec3 SurfaceMaterial_Diffuse::BounceViewRay(const RRay& InViewRay, const RayHit
 	// Lambertian reflectance
 	float DotProductResult = Math::Max(0.0f, RVec3::Dot(HitResult.HitNormal, DiffuseReflectionDirection));
 
-	return Albedo * DotProductResult;
+	return ViewRayBounceResult(Albedo * DotProductResult);
 }
 
 RVec3 SurfaceMaterial_Diffuse::PreviewColor(const RayHitResult& HitResult) const
@@ -48,10 +48,12 @@ SurfaceMaterial_DiffuseChecker::SurfaceMaterial_DiffuseChecker(const RVec3 InAlb
     }
 }
 
-RVec3 SurfaceMaterial_DiffuseChecker::BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const
+ViewRayBounceResult SurfaceMaterial_DiffuseChecker::BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const
 {
 	float Factor = IsBrighterArea(HitResult.HitPosition) ? 1.0f : 0.5f;
-	return SurfaceMaterial_Diffuse::BounceViewRay(InViewRay, HitResult, OutViewRay) * Factor;
+	auto Result = SurfaceMaterial_Diffuse::BounceViewRay(InViewRay, HitResult, OutViewRay);
+	Result.Attenuation *= Factor;
+	return Result;
 }
 
 RVec3 SurfaceMaterial_DiffuseChecker::PreviewColor(const RayHitResult& HitResult) const
@@ -91,7 +93,7 @@ SurfaceMaterial_Reflective::SurfaceMaterial_Reflective(const RVec3 InAlbedo /*= 
 {
 }
 
-RVec3 SurfaceMaterial_Reflective::BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const
+ViewRayBounceResult SurfaceMaterial_Reflective::BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const
 {
 	//if (RVec3::Dot(InViewRay.Direction, HitResult.HitNormal) >= 0)
 	//{
@@ -112,12 +114,30 @@ RVec3 SurfaceMaterial_Reflective::BounceViewRay(const RRay& InViewRay, const Ray
 
 	OutViewRay = RRay(HitResult.HitPosition + newDir * 0.001f, newDir, RayDistance);
 
-	return Albedo;
+	return ViewRayBounceResult(Albedo);
 }
 
 RVec3 SurfaceMaterial_Reflective::PreviewColor(const RayHitResult& HitResult) const
 {
 	return Albedo;
+}
+
+SurfaceMaterial_Emissive::SurfaceMaterial_Emissive(const RVec3 InColor)
+	: Color(InColor)
+{
+}
+
+ViewRayBounceResult SurfaceMaterial_Emissive::BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const
+{
+	OutViewRay = InViewRay;
+	
+	// Use 0 attenuation so view ray will trace no further
+	return ViewRayBounceResult(RVec3(0, 0, 0), Color);
+}
+
+RVec3 SurfaceMaterial_Emissive::PreviewColor(const RayHitResult& HitResult) const
+{
+	return Color;
 }
 
 SurfaceMaterial_Blend::SurfaceMaterial_Blend(unique_ptr<ISurfaceMaterial> InMaterialA, unique_ptr<ISurfaceMaterial> InMaterialB, float InBlendFactor)
@@ -128,7 +148,7 @@ SurfaceMaterial_Blend::SurfaceMaterial_Blend(unique_ptr<ISurfaceMaterial> InMate
 
 }
 
-RVec3 SurfaceMaterial_Blend::BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const
+ViewRayBounceResult SurfaceMaterial_Blend::BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const
 {
 	return RMath::Random() > BlendFactor ? BlendMaterialA->BounceViewRay(InViewRay, HitResult, OutViewRay) : BlendMaterialB->BounceViewRay(InViewRay, HitResult, OutViewRay);
 }
@@ -138,14 +158,30 @@ RVec3 SurfaceMaterial_Blend::PreviewColor(const RayHitResult& HitResult) const
 	return RMath::Random() > BlendFactor ? BlendMaterialA->PreviewColor(HitResult) : BlendMaterialB->PreviewColor(HitResult);
 }
 
-RVec3 SurfaceMaterial_Null::BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const
+SurfaceMaterial_Combine::SurfaceMaterial_Combine(std::unique_ptr<ISurfaceMaterial> InMaterialA, std::unique_ptr<ISurfaceMaterial> InMaterialB)
+	: MaterialA(std::move(InMaterialA))
+	, MaterialB(std::move(InMaterialB))
+{
+}
+
+ViewRayBounceResult SurfaceMaterial_Combine::BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const
+{
+	return MaterialA->BounceViewRay(InViewRay, HitResult, OutViewRay) + MaterialB->BounceViewRay(InViewRay, HitResult, OutViewRay);
+}
+
+RVec3 SurfaceMaterial_Combine::PreviewColor(const RayHitResult& HitResult) const
+{
+	return MaterialA->PreviewColor(HitResult) + MaterialB->PreviewColor(HitResult);
+}
+
+ViewRayBounceResult SurfaceMaterial_Null::BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const
 {
 	// The remaining distance ray will travel
 	float RayDistance = InViewRay.Distance - HitResult.Distance;
 
 	OutViewRay = RRay(HitResult.HitPosition + InViewRay.Direction * 0.001f, InViewRay.Direction, RayDistance);
 
-	return RVec3(1, 1, 1);
+	return ViewRayBounceResult(RVec3(1, 1, 1));
 }
 
 RVec3 SurfaceMaterial_Null::PreviewColor(const RayHitResult& HitResult) const

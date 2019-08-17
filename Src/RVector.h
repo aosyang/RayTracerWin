@@ -137,6 +137,11 @@ public:
     bool operator==(const RVec3& rhs) const							{ return x == rhs.x && y == rhs.y && z == rhs.z; }
     bool operator!=(const RVec3& rhs) const							{ return x != rhs.x || y != rhs.y || z != rhs.z; }
 
+	bool IsNonZero() const
+	{
+		return !FLT_EQUAL_ZERO(x) && !FLT_EQUAL_ZERO(y) && !FLT_EQUAL_ZERO(z);
+	}
+
 	float SquaredMagitude() const
 	{
 		return x*x + y*y + z*z;

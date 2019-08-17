@@ -22,12 +22,6 @@ RayTracerScene::RayTracerScene()
 
 }
 
-void RayTracerScene::AddShape(unique_ptr<RShape> Shape, RMaterial Material /*= RMaterial()*/)
-{
-	Shape->SetMaterial(Material);
-	SceneShapes.push_back(std::move(Shape));
-}
-
 void RayTracerScene::AddShape(unique_ptr<RShape> Shape, unique_ptr<ISurfaceMaterial> SurfaceMaterial)
 {
 	Shape->SetSurfaceMaterial(std::move(SurfaceMaterial));
@@ -55,25 +49,11 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes, const Rend
 	if (HitShapeIndex != -1)
 	{
 		auto& HitShape = SceneShapes[HitShapeIndex];
-		auto& Material = HitShape->GetMaterial();
 		ISurfaceMaterial* const SurfaceMaterial = HitShape->GetSurfaceMaterial();
-
-		RVec3 SurfaceColor = Material.Color;
 
 		if (InOption.UseBaseColor)
 		{
 			// Base color render pass for previewing
-			if (Material.MaterialFlags & MT_Diffuse)
-			{
-				FinalColor += SurfaceColor;
-				FinalColor *= RVec3::Dot(Result.HitNormal, RVec3(0, 1, 0)) * 0.5f + 0.5f;
-			}
-
-			if (Material.MaterialFlags & MT_Emissive)
-			{
-				FinalColor += SurfaceColor;
-			}
-
 			if (SurfaceMaterial)
 			{
 				FinalColor += SurfaceMaterial->PreviewColor(Result);
@@ -81,66 +61,18 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes, const Rend
 		}
 		else
 		{
-			float DiffuseRatio = 1.0f;
-
-			// The remaining distance ray will travel
-			float RayDistance = InRay.Distance - Result.Distance;
-
-			if (RayDistance > 0)
-			{
-				if (Material.MaterialFlags & MT_Reflective)
-				{
-					const float ReflectiveRatio = 0.5f;
-					DiffuseRatio = 1.0f - ReflectiveRatio;
-
-					// Ignore hitting a surface from its back side
-					if (RVec3::Dot(InRay.Direction, Result.HitNormal) < 0)
-					{
-						// The direction of reflection
-						RVec3 newDir = InRay.Direction.Reflect(Result.HitNormal);
-						RRay reflRay(Result.HitPosition + newDir * 0.001f, newDir, RayDistance);
-
-						FinalColor += RayTrace(reflRay, MaxBounceTimes - 1, InOption) * ReflectiveRatio;
-					}
-				}
-
-				if (Material.MaterialFlags & MT_Diffuse)
-				{
-					float DotProductResult = 1.0f;
-					RVec3 DiffuseColor = RVec3(1.0f, 1.0f, 1.0f);
-
-					// Ray bounces off a surface in a random direction of a hemisphere
-					RVec3 DiffuseReflectionDirection = RMath::RandomHemisphereDirection(Result.HitNormal);
-					RRay DiffuseRay(Result.HitPosition + DiffuseReflectionDirection * 0.001f, DiffuseReflectionDirection, RayDistance);
-
-					// Lambertian reflectance
-					DotProductResult = Math::Max(0.0f, RVec3::Dot(Result.HitNormal, DiffuseReflectionDirection));
-
-					DiffuseColor = RayTrace(DiffuseRay, MaxBounceTimes - 1, InOption);
-
-#if (USE_LIGHTS == 1)
-					// Apply diffuse lighting
-					for (int i = 0; i < ARRAYSIZE(GSceneLights); i++)
-					{
-						LightData* l = &GSceneLights[i];
-						FinalColor += CalculateLightColor(l, Result, SurfaceColor) * DiffuseRatio;
-					}
-#endif
-
-					FinalColor += SurfaceColor * DiffuseColor * DotProductResult * DiffuseRatio;
-				}
-			}
-
-			if (Material.MaterialFlags & MT_Emissive)
-			{
-				FinalColor += SurfaceColor;
-			}
-
 			if (SurfaceMaterial)
 			{
 				RRay OutRay;
-				RVec3 SurfaceReflection = SurfaceMaterial->BounceViewRay(InRay, Result, OutRay);
-				FinalColor += SurfaceReflection * RayTrace(OutRay, MaxBounceTimes - 1, InOption);
+				auto BounceResult = SurfaceMaterial->BounceViewRay(InRay, Result, OutRay);
+
+				// Early out further ray tracing if attenuation reaches zero
+				if (BounceResult.Attenuation.IsNonZero())
+				{
+					FinalColor += BounceResult.Attenuation * RayTrace(OutRay, MaxBounceTimes - 1, InOption);
+				}
+
+				FinalColor += BounceResult.Emissive;
 			}
 		}
 	}

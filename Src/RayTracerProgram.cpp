@@ -410,9 +410,30 @@ void RayTracerProgram::SetupScene()
 			0.5f)
 	);
 
-	Scene.AddShape(RSphere::Create(RVec3(2.8f, -1.2f, 4.0f), 1.5f), RMaterial(RVec3(0.95f, 0.75f, 0.1f), false, MT_Diffuse | MT_Reflective | MT_Emissive));
-	Scene.AddShape(RSphere::Create(RVec3(0.0f, 5.0f, 0.0f), 0.5f), RMaterial(RVec3(5.0f, 2.0f, 6.0f), false, MT_Emissive));					// Ceiling light
-	Scene.AddShape(RCapsule::Create(RVec3(-1.5f, -0.5f, 0.0f), RVec3(-2.0f, -1.5f, 0.0f), 0.5f), RMaterial(RVec3(0.25f, 0.75f, 0.6f), false, MT_Diffuse | MT_Reflective | MT_Emissive));
+	Scene.AddShape(RSphere::Create(RVec3(2.8f, -1.2f, 4.0f), 1.5f),
+		MakeUnique<SurfaceMaterial_Combine>(
+			MakeUnique<SurfaceMaterial_Blend>(
+				MakeUnique<SurfaceMaterial_Reflective>(RVec3(0.95f, 0.75f, 0.1f)),
+				MakeUnique<SurfaceMaterial_Diffuse>(RVec3(0.95f, 0.75f, 0.1f)),
+				0.5f),
+			MakeUnique<SurfaceMaterial_Emissive>(RVec3(0.95f, 0.75f, 0.1f))
+		)
+	);
+
+	// Ceiling light
+	Scene.AddShape(RSphere::Create(RVec3(0.0f, 5.0f, 0.0f), 0.5f),
+		MakeUnique<SurfaceMaterial_Emissive>(RVec3(5.0f, 2.0f, 6.0f))
+	);
+
+	Scene.AddShape(RCapsule::Create(RVec3(-1.5f, -0.5f, 0.0f), RVec3(-2.0f, -1.5f, 0.0f), 0.5f),
+		MakeUnique<SurfaceMaterial_Combine>(
+			MakeUnique<SurfaceMaterial_Blend>(
+				MakeUnique<SurfaceMaterial_Reflective>(RVec3(0.25f, 0.75f, 0.6f)),
+				MakeUnique<SurfaceMaterial_Diffuse>(RVec3(0.25f, 0.75f, 0.6f)),
+				0.5f),
+			MakeUnique<SurfaceMaterial_Emissive>(RVec3(0.25f, 0.75f, 0.6f))
+		)
+	);
 
 	// Walls
 	{

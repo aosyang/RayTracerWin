@@ -46,8 +46,6 @@ public:
 	RayTracerScene();
 
 	// Add a shape to scene
-	void AddShape(unique_ptr<RShape> Shape, RMaterial Material = RMaterial());
-
 	void AddShape(unique_ptr<RShape> Shape, unique_ptr<ISurfaceMaterial> SurfaceMaterial);
 
 	// Run the ray tracing along a ray and get the color

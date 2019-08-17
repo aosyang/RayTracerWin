@@ -5,16 +5,6 @@
 //=============================================================================
 #include "Shapes.h"
 
-void RShape::SetMaterial(RMaterial Material)
-{
-	ShapeMaterial = Material;
-}
-
-const RMaterial& RShape::GetMaterial() const
-{
-	return ShapeMaterial;
-}
-
 void RShape::SetSurfaceMaterial(unique_ptr<ISurfaceMaterial> InMaterial)
 {
 	SurfaceMaterial = std::move(InMaterial);
