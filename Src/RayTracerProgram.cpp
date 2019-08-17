@@ -119,7 +119,7 @@ void DisplayThreadAndTime()
 // Log thread - End
 //////////////////////////////////////////////////////////////////////////
 
-void ThreadWorker_Render(int begin, int end, int MaxBounceCount = 10, const RenderOption& InOption = RenderOption())
+void ThreadWorker_Render(int begin, int end, int MaxBounceCount, const RenderOption& InOption = RenderOption())
 {
 	const RVec3 ViewPoint(0, 0, -7);
 	const RayTracerScene* Scene = RayTracerProgram::GetActiveInstance().GetScene();
@@ -219,8 +219,11 @@ void ThreadTaskWorker()
 			// Mutex will be unlocked when leaving the scope. Other worker threads will then get tasks afterwards.
 		}
 
+		// The max times ray can bounce between surfaces
+		static const int MaxBounceTimes = 4;
+
 		RLogThread("Executing render task on thread [%s]...\n", ThreadName.c_str());
-		ThreadWorker_Render(Task.Start, Task.End, 4, Task.Option);
+		ThreadWorker_Render(Task.Start, Task.End, MaxBounceTimes, Task.Option);
 		RLogThread("Render task is done on thread [%s]!\n", ThreadName.c_str());
 
 		TaskQueue.NotifySingleTaskDone();

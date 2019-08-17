@@ -34,7 +34,7 @@ void RayTracerScene::AddShape(unique_ptr<RShape> Shape, unique_ptr<ISurfaceMater
 	SceneShapes.push_back(std::move(Shape));
 }
 
-RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, const RenderOption& InOption /*= RenderOption()*/) const
+RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes, const RenderOption& InOption /*= RenderOption()*/) const
 {
 	// Stop the recursion function when program is exiting
 	if (RayTracerProgram::GetActiveInstance().IsTerminating())

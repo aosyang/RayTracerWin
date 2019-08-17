@@ -51,7 +51,7 @@ public:
 	void AddShape(unique_ptr<RShape> Shape, unique_ptr<ISurfaceMaterial> SurfaceMaterial);
 
 	// Run the ray tracing along a ray and get the color
-	RVec3 RayTrace(const RRay& InRay, int MaxBounceTimes = 10, const RenderOption& InOption = RenderOption()) const;
+	RVec3 RayTrace(const RRay& InRay, int MaxBounceTimes, const RenderOption& InOption = RenderOption()) const;
 
 	// Test a ray against the scene and find intersection result
 	int FindIntersectionWithScene(RRay TestRay, RayHitResult& OutResult) const;
