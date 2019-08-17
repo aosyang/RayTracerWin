@@ -268,3 +268,8 @@ public:
 	}
 };
 
+// operator overloaded for float * RVec3
+inline RVec3 operator*(float val, const RVec3& v)
+{
+    return RVec3(v.x * val, v.y * val, v.z * val);
+}

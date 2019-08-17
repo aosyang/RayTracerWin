@@ -147,7 +147,8 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
     else
     {
         // Did not hit any shapes, returns sky color
-        return RVec3(0.4f, 0.6f, 0.9f);
+        float t = 0.5f * (InRay.Direction.y + 1.0f);
+        return (1.0f - t) * RVec3(1.0f, 1.0f, 1.0f) + t * RVec3(0.5f, 0.7f, 1.0f);
     }
 
 	return FinalColor;
