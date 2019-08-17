@@ -41,7 +41,7 @@ namespace RMath
     {
         RVec3 v = PseudoRandomUnitVector();
         
-        if (v.Dot(Normal) > 0.0f)
+        if (RVec3::Dot(v, Normal) > 0.0f)
         {
             return v;
         }

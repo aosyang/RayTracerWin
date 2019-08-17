@@ -187,25 +187,20 @@ public:
     }
 
 	// Dot product
-	float Dot(const RVec3& rhs) const
-	{
-		return x * rhs.x + y * rhs.y + z * rhs.z;
-	}
-
 	static float Dot(const RVec3& a, const RVec3& b)
 	{
-		return a.Dot(b);
+		return a.x * b.x + a.y * b.y + a.z * b.z;
 	}
 
 	// Cross product
-	RVec3 Cross(const RVec3& rhs) const
+	static RVec3 Cross(const RVec3& a, const RVec3& b)
 	{
-		return RVec3(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
+		return RVec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 	}
 
 	RVec3 Reflect(const RVec3& normal) const
 	{
-		return *this - normal * 2.0f * this->Dot(normal);
+		return *this - normal * 2.0f * Dot(*this, normal);
 	}
 
 	static RVec3 Zero()

@@ -8,6 +8,7 @@
 #include "RVector.h"
 #include "RRay.h"
 #include "Material.h"
+#include "SurfaceMaterials.h"
 
 #include <memory>
 
@@ -27,6 +28,9 @@ public:
 	// Get material of the shape
 	const RMaterial& GetMaterial() const;
 
+	void SetSurfaceMaterial(unique_ptr<ISurfaceMaterial> InMaterial);
+	ISurfaceMaterial* GetSurfaceMaterial();
+
 	// Whether to run aabb culling on this shape
 	virtual bool HasCullingBounds() const { return true; }
 
@@ -39,6 +43,8 @@ protected:
 
 	// Material used by the shape
 	RMaterial ShapeMaterial;
+
+	unique_ptr<ISurfaceMaterial> SurfaceMaterial;
 };
 
 
@@ -121,3 +127,10 @@ public:
 
 	virtual bool TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /* = nullptr */) const override;
 };
+
+
+FORCEINLINE const RAabb& RShape::GetBounds() const
+{
+	return Aabb;
+}
+

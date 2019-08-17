@@ -65,10 +65,10 @@ bool RRay::TestIntersectionWithSphere(const RVec3& SphereCenter, float SphereRad
 bool RRay::TestIntersectionWithPlane(const RVec3& PlaneNormal, const RVec3& PointOnPlane, RayHitResult* result /*= nullptr*/) const
 {
 	// assuming vectors are all normalized
-	float denom = PlaneNormal.Dot(Direction);
+	float denom = RVec3::Dot(PlaneNormal, Direction);
 	if (fabsf(denom) > 1e-6) {
 		RVec3 p0l0 = PointOnPlane - Origin;
-		float t = p0l0.Dot(PlaneNormal) / denom;
+		float t = RVec3::Dot(p0l0, PlaneNormal) / denom;
 		if (t >= 0 && t < Distance)
 		{
 			if (result)
@@ -138,7 +138,7 @@ bool RRay::TestIntersectionWithTriangle(const RVec3 TriPoints[3], RayHitResult* 
 {
 	RVec3 p0p1 = TriPoints[1] - TriPoints[0];
 	RVec3 p0p2 = TriPoints[2] - TriPoints[0];
-	const RVec3 Normal = p0p1.Cross(p0p2).GetNormalizedVec3();
+	const RVec3 Normal = RVec3::Cross(p0p1, p0p2).GetNormalizedVec3();
 
 	return TestIntersectionWithTriangleAndFaceNormal(TriPoints, Normal, result);
 }
@@ -185,7 +185,7 @@ bool RRay::TestIntersectionWithTriangleAndFaceNormal(const RVec3 TriPoints[3], c
 	for (int i = 0; i < 3; i++)
 	{
 		RVec3 edge = TriPoints[(i + 1) % 3] - TriPoints[i];
-		RVec3 edge_normal = edge.Cross(Normal);
+		RVec3 edge_normal = RVec3::Cross(edge, Normal);
 
 		if (RVec3::Dot(edge_normal, cp - TriPoints[i]) > 0)
 		{

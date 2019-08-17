@@ -384,12 +384,29 @@ void RayTracerProgram::ExecuteCleanup()
 
 void RayTracerProgram::SetupScene()
 {
-	Scene.AddShape(RSphere::Create(RVec3(0.0f, 2.3f, 2.0f), 0.9f), RMaterial(RVec3(1.0f, 0.5f, 0.1f), false, MT_Diffuse | MT_Reflective));
-	Scene.AddShape(RSphere::Create(RVec3(-1.5f, 2.2f, 3.0f), 0.5f), RMaterial(RVec3(0.1f, 1.0f, 0.2f), false, MT_Diffuse));
-	Scene.AddShape(RSphere::Create(RVec3(-0.2f, -1.8f, 1.0f), 0.5f), RMaterial(RVec3(0.5f, 0.0f, 0.2f), false, MT_Diffuse | MT_Reflective));
+	Scene.AddShape(RSphere::Create(RVec3(0.0f, 2.3f, 2.0f), 0.9f),
+		std::make_unique<SurfaceMaterial_Blend>(
+			std::make_unique<SurfaceMaterial_Reflective>(),
+			std::make_unique<SurfaceMaterial_Diffuse>(RVec3(1.0f, 0.5f, 0.1f)),
+			0.5f)
+	);
+
+	Scene.AddShape(RSphere::Create(RVec3(-1.5f, 2.2f, 3.0f), 0.5f),
+		std::make_unique<SurfaceMaterial_Diffuse>(RVec3(0.1f, 1.0f, 0.2f))
+	);
+
+	Scene.AddShape(RSphere::Create(RVec3(-0.2f, -1.8f, 1.0f), 0.5f),
+		std::make_unique<SurfaceMaterial_Blend>(
+			std::make_unique<SurfaceMaterial_Reflective>(),
+			std::make_unique<SurfaceMaterial_Diffuse>(RVec3(0.5f, 0.0f, 0.2f)),
+			0.5f)
+	);
+
 	Scene.AddShape(RSphere::Create(RVec3(2.8f, -1.2f, 4.0f), 1.5f), RMaterial(RVec3(0.95f, 0.75f, 0.1f), false, MT_Diffuse | MT_Reflective | MT_Emissive));
 	Scene.AddShape(RSphere::Create(RVec3(0.0f, 5.0f, 0.0f), 0.5f), RMaterial(RVec3(5.0f, 2.0f, 6.0f), false, MT_Emissive));					// Ceiling light
 	Scene.AddShape(RCapsule::Create(RVec3(-1.5f, -0.5f, 0.0f), RVec3(-2.0f, -1.5f, 0.0f), 0.5f), RMaterial(RVec3(0.25f, 0.75f, 0.6f), false, MT_Diffuse | MT_Reflective | MT_Emissive));
+
+	// Walls
 	Scene.AddShape(RPlane::Create(RVec3(0.0f, 1.0f, 0.0f), RVec3(0.0f, -2.5f, 0.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse | MT_Reflective));			// Ground
 	Scene.AddShape(RPlane::Create(RVec3(0.0f, -1.0f, 0.0f), RVec3(0.0f, 5.0f, 0.0f)), RMaterial(RVec3(1.2f, 1.2f, 1.5f), false, MT_Diffuse));			// Ceiling / Sky light plane
 	Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, -1.0f), RVec3(0.0f, 0.0f, 5.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));			// Back wall
@@ -397,5 +414,11 @@ void RayTracerProgram::SetupScene()
 	Scene.AddShape(RPlane::Create(RVec3(1.0f, 0.0f, 0.0f), RVec3(-5.0f, 0.0f, 0.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));			// Right wall
 	Scene.AddShape(RPlane::Create(RVec3(-1.0f, 0.0f, 0.0f), RVec3(5.0f, 0.0f, 0.0f)), RMaterial(RVec3(1.0f, 1.0f, 1.0f), true, MT_Diffuse));			// Left wall
 
-	Scene.AddShape(RMeshShape::Create("../Data/TorusKnot.obj"), RMaterial(RVec3(1.0f, 1.0f, 0.5f), false, MT_Diffuse | MT_Reflective));
+	// Meshes
+	Scene.AddShape(RMeshShape::Create("../Data/TorusKnot.obj"),
+		std::make_unique<SurfaceMaterial_Blend>(
+			std::make_unique<SurfaceMaterial_Reflective>(),
+			std::make_unique<SurfaceMaterial_Diffuse>(RVec3(1.0f, 1.0f, 0.5f)),
+			0.5f)
+	);
 }

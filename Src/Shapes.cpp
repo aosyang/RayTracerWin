@@ -15,9 +15,14 @@ const RMaterial& RShape::GetMaterial() const
 	return ShapeMaterial;
 }
 
-const RAabb& RShape::GetBounds() const
+void RShape::SetSurfaceMaterial(unique_ptr<ISurfaceMaterial> InMaterial)
 {
-	return Aabb;
+	SurfaceMaterial = std::move(InMaterial);
+}
+
+ISurfaceMaterial* RShape::GetSurfaceMaterial()
+{
+	return SurfaceMaterial.get();
 }
 
 bool RSphere::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= nullptr*/) const
@@ -122,8 +127,8 @@ bool RCapsule::TestRayCylinderIntersection(const RRay& InRay, RayHitResult* OutR
 		OutResult->Distance = r_t;
 		OutResult->HitPosition = InRay.Origin + InRay.Direction * r_t;
 
-		RVec3 SideVec = (End - Start).Cross(OutResult->HitPosition - Start);
-		OutResult->HitNormal = SideVec.Cross(End - Start).GetNormalizedVec3();
+		RVec3 SideVec = RVec3::Cross((End - Start), OutResult->HitPosition - Start);
+		OutResult->HitNormal = RVec3::Cross(SideVec, End - Start).GetNormalizedVec3();
 	}
 
 	return true;

@@ -28,6 +28,12 @@ void RayTracerScene::AddShape(unique_ptr<RShape> Shape, RMaterial Material /*= R
 	SceneShapes.push_back(std::move(Shape));
 }
 
+void RayTracerScene::AddShape(unique_ptr<RShape> Shape, unique_ptr<ISurfaceMaterial> SurfaceMaterial)
+{
+	Shape->SetSurfaceMaterial(std::move(SurfaceMaterial));
+	SceneShapes.push_back(std::move(Shape));
+}
+
 RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, const RenderOption& InOption /*= RenderOption()*/) const
 {
 	// Stop the recursion function when program is exiting
@@ -50,6 +56,7 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
 	{
 		auto& HitShape = SceneShapes[HitShapeIndex];
 		auto& Material = HitShape->GetMaterial();
+		ISurfaceMaterial* const SurfaceMaterial = HitShape->GetSurfaceMaterial();
 
 		RVec3 SurfaceColor = Material.Color;
 
@@ -101,7 +108,7 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
 					DiffuseRatio = 1.0f - ReflectiveRatio;
 
 					// Ignore hitting a surface from its back side
-					if (InRay.Direction.Dot(Result.HitNormal) < 0)
+					if (RVec3::Dot(InRay.Direction, Result.HitNormal) < 0)
 					{
 						// The direction of reflection
 						RVec3 newDir = InRay.Direction.Reflect(Result.HitNormal);
@@ -121,7 +128,7 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
 					RRay DiffuseRay(Result.HitPosition + DiffuseReflectionDirection * 0.001f, DiffuseReflectionDirection, RayDistance);
 
 					// Lambertian reflectance
-					DotProductResult = Math::Max(0.0f, Result.HitNormal.Dot(DiffuseReflectionDirection));
+					DotProductResult = Math::Max(0.0f, RVec3::Dot(Result.HitNormal, DiffuseReflectionDirection));
 
 					DiffuseColor = RayTrace(DiffuseRay, MaxBounceTimes - 1, InOption);
 
@@ -141,6 +148,13 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes /*= 10*/, c
 			if (Material.MaterialFlags & MT_Emissive)
 			{
 				FinalColor += SurfaceColor;
+			}
+
+			if (SurfaceMaterial)
+			{
+				RRay OutRay;
+				RVec3 SurfaceReflection = SurfaceMaterial->BounceViewRay(InRay, Result, OutRay);
+				FinalColor += SurfaceReflection * RayTrace(OutRay, MaxBounceTimes - 1, InOption);
 			}
 		}
 	}
@@ -227,7 +241,7 @@ RVec3 RayTracerScene::CalculateLightColor(const LightData* InLight, const RayHit
 	}
 	else
 	{
-		float ldp = Math::Max(0.0f, InHitResult.HitNormal.Dot(LightDirection));
+		float ldp = Math::Max(0.0f, RVec3::Dot(InHitResult.HitNormal, LightDirection));
 		return InSurfaceColor * ldp;
 	}
 }

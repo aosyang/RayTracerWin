@@ -8,6 +8,7 @@
 
 #include "Shapes.h"
 #include "Light.h"
+#include "SurfaceMaterials.h"
 
 #include <vector>
 #include <memory>
@@ -46,6 +47,8 @@ public:
 
 	// Add a shape to scene
 	void AddShape(unique_ptr<RShape> Shape, RMaterial Material = RMaterial());
+
+	void AddShape(unique_ptr<RShape> Shape, unique_ptr<ISurfaceMaterial> SurfaceMaterial);
 
 	// Run the ray tracing along a ray and get the color
 	RVec3 RayTrace(const RRay& InRay, int MaxBounceTimes = 10, const RenderOption& InOption = RenderOption()) const;

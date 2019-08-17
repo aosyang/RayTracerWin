@@ -147,7 +147,7 @@ RMeshShape::RMeshShape(const char* Filename)
 
 		RVec3 p0p1 = p1 - p0;
 		RVec3 p0p2 = p2 - p0;
-		RVec3 Normal = p0p1.Cross(p0p2).GetNormalizedVec3();
+		RVec3 Normal = RVec3::Cross(p0p1, p0p2).GetNormalizedVec3();
 
 		FaceNormals.push_back(Normal);
 	}

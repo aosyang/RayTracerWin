@@ -15,6 +15,17 @@ namespace RMath
 	{
 		return (float)rand() / RAND_MAX;
 	}
+
+	inline float RandomRange(float Start, float End)
+	{
+		return Start + Random() * (End - Start);
+	}
+
+	template<typename T>
+	T Clamp(T& Input, const T& MinValue, const T& MaxValue)
+	{
+		return Input < MinValue ? MinValue : Input > MaxValue ? MaxValue : Input;
+	}
     
     // Generate a random vector uniformly spread on a unit sphere
     inline RVec3 RandomUnitVector()
