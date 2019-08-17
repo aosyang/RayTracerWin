@@ -41,13 +41,16 @@ protected:
 class SurfaceMaterial_DiffuseChecker : public SurfaceMaterial_Diffuse
 {
 public:
-	SurfaceMaterial_DiffuseChecker(const RVec3 InAlbedo = RVec3(1.0f, 1.0f, 1.0f));
+	SurfaceMaterial_DiffuseChecker(const RVec3 InAlbedo = RVec3(1.0f, 1.0f, 1.0f), float InPatternSize = 5.0f);
 
 	virtual RVec3 BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const override;
 	virtual RVec3 PreviewColor(const RayHitResult& HitResult) const override;
 
 private:
 	bool IsBrighterArea(const RVec3& WorldPosition) const;
+    
+    // One divide pattern size
+    float ReciprocalPatternSize;
 };
 
 

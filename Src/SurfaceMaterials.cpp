@@ -35,9 +35,17 @@ RVec3 SurfaceMaterial_Diffuse::PreviewColor(const RayHitResult& HitResult) const
 	return Albedo * (RVec3::Dot(HitResult.HitNormal, RVec3(0, 1, 0)) * 0.5f + 0.5f);
 }
 
-SurfaceMaterial_DiffuseChecker::SurfaceMaterial_DiffuseChecker(const RVec3 InAlbedo /*= RVec3(1.0f, 1.0f, 1.0f)*/)
+SurfaceMaterial_DiffuseChecker::SurfaceMaterial_DiffuseChecker(const RVec3 InAlbedo /*= RVec3(1.0f, 1.0f, 1.0f)*/, float InPatternSize /*= 5.0f*/)
 	: SurfaceMaterial_Diffuse(InAlbedo)
 {
+    if (FLT_EQUAL_ZERO(InPatternSize))
+    {
+        ReciprocalPatternSize = 1.0f;
+    }
+    else
+    {
+        ReciprocalPatternSize = 1.0f / InPatternSize;
+    }
 }
 
 RVec3 SurfaceMaterial_DiffuseChecker::BounceViewRay(const RRay& InViewRay, const RayHitResult& HitResult, RRay& OutViewRay) const
@@ -55,9 +63,9 @@ RVec3 SurfaceMaterial_DiffuseChecker::PreviewColor(const RayHitResult& HitResult
 bool SurfaceMaterial_DiffuseChecker::IsBrighterArea(const RVec3& WorldPosition) const
 {
 	bool bResult = false;
-	float fx = WorldPosition.x * 0.2f;
-	float fy = WorldPosition.y * 0.2f;
-	float fz = WorldPosition.z * 0.2f;
+	float fx = WorldPosition.x * ReciprocalPatternSize;
+	float fy = WorldPosition.y * ReciprocalPatternSize;
+	float fz = WorldPosition.z * ReciprocalPatternSize;
 
 	if (fx - floorf(fx) > 0.5f)
 	{
