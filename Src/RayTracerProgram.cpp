@@ -23,6 +23,11 @@
 #include <chrono>
 #include <sstream>
 
+template<typename T, typename ...Args>
+std::unique_ptr<T> MakeUnique(Args&&... args)
+{
+    return std::move(std::unique_ptr<T>(new T(std::forward<Args>(args)...)));
+}
 
 RayTracerProgram* RayTracerProgram::CurrentInstance = nullptr;
 
@@ -385,20 +390,20 @@ void RayTracerProgram::ExecuteCleanup()
 void RayTracerProgram::SetupScene()
 {
 	Scene.AddShape(RSphere::Create(RVec3(0.0f, 2.3f, 2.0f), 0.9f),
-		std::make_unique<SurfaceMaterial_Blend>(
-			std::make_unique<SurfaceMaterial_Reflective>(),
-			std::make_unique<SurfaceMaterial_Diffuse>(RVec3(1.0f, 0.5f, 0.1f)),
+		MakeUnique<SurfaceMaterial_Blend>(
+			MakeUnique<SurfaceMaterial_Reflective>(),
+			MakeUnique<SurfaceMaterial_Diffuse>(RVec3(1.0f, 0.5f, 0.1f)),
 			0.5f)
 	);
 
 	Scene.AddShape(RSphere::Create(RVec3(-1.5f, 2.2f, 3.0f), 0.5f),
-		std::make_unique<SurfaceMaterial_Diffuse>(RVec3(0.1f, 1.0f, 0.2f))
+		MakeUnique<SurfaceMaterial_Diffuse>(RVec3(0.1f, 1.0f, 0.2f))
 	);
 
 	Scene.AddShape(RSphere::Create(RVec3(-0.2f, -1.8f, 1.0f), 0.5f),
-		std::make_unique<SurfaceMaterial_Blend>(
-			std::make_unique<SurfaceMaterial_Reflective>(),
-			std::make_unique<SurfaceMaterial_Diffuse>(RVec3(0.5f, 0.0f, 0.2f)),
+		MakeUnique<SurfaceMaterial_Blend>(
+			MakeUnique<SurfaceMaterial_Reflective>(),
+			MakeUnique<SurfaceMaterial_Diffuse>(RVec3(0.5f, 0.0f, 0.2f)),
 			0.5f)
 	);
 
@@ -410,43 +415,43 @@ void RayTracerProgram::SetupScene()
 	{
 		// Ground
 		Scene.AddShape(RPlane::Create(RVec3(0.0f, 1.0f, 0.0f), RVec3(0.0f, -2.5f, 0.0f)),
-			std::make_unique<SurfaceMaterial_Blend>(
-				std::make_unique<SurfaceMaterial_Reflective>(),
-				std::make_unique<SurfaceMaterial_DiffuseChecker>(),
+			MakeUnique<SurfaceMaterial_Blend>(
+				MakeUnique<SurfaceMaterial_Reflective>(),
+				MakeUnique<SurfaceMaterial_DiffuseChecker>(),
 				0.5f)
 		);
 
 		// Ceiling / Sky light plane
 		Scene.AddShape(RPlane::Create(RVec3(0.0f, -1.0f, 0.0f), RVec3(0.0f, 5.0f, 0.0f)),
-			std::make_unique<SurfaceMaterial_Diffuse>(RVec3(1.2f, 1.2f, 1.5f))
+			MakeUnique<SurfaceMaterial_Diffuse>(RVec3(1.2f, 1.2f, 1.5f))
 		);
 
 		// Back wall
 		Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, -1.0f), RVec3(0.0f, 0.0f, 5.0f)),
-			std::make_unique<SurfaceMaterial_DiffuseChecker>()
+			MakeUnique<SurfaceMaterial_DiffuseChecker>()
 		);
 
 		// Front wall (behind the camera)
 		Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, 1.0f), RVec3(0.0f, 0.0f, -10.0f)),
-			std::make_unique<SurfaceMaterial_DiffuseChecker>()
+			MakeUnique<SurfaceMaterial_DiffuseChecker>()
 		);
 
 		// Right wall
 		Scene.AddShape(RPlane::Create(RVec3(1.0f, 0.0f, 0.0f), RVec3(-5.0f, 0.0f, 0.0f)),
-			std::make_unique<SurfaceMaterial_DiffuseChecker>()
+			MakeUnique<SurfaceMaterial_DiffuseChecker>()
 		);
 
 		// Left wall
 		Scene.AddShape(RPlane::Create(RVec3(-1.0f, 0.0f, 0.0f), RVec3(5.0f, 0.0f, 0.0f)),
-			std::make_unique<SurfaceMaterial_DiffuseChecker>()
+			MakeUnique<SurfaceMaterial_DiffuseChecker>()
 		);
 	}
 
 	// Meshes
 	Scene.AddShape(RMeshShape::Create("../Data/TorusKnot.obj"),
-		std::make_unique<SurfaceMaterial_Blend>(
-			std::make_unique<SurfaceMaterial_Reflective>(),
-			std::make_unique<SurfaceMaterial_Diffuse>(RVec3(1.0f, 1.0f, 0.5f)),
+		MakeUnique<SurfaceMaterial_Blend>(
+			MakeUnique<SurfaceMaterial_Reflective>(),
+			MakeUnique<SurfaceMaterial_Diffuse>(RVec3(1.0f, 1.0f, 0.5f)),
 			0.5f)
 	);
 }
