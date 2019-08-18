@@ -12,9 +12,18 @@
 // Ray hitting information
 struct RayHitResult
 {
+	RayHitResult()
+		: Distance(0.0f)
+		, SampledColor(1.0f, 1.0f, 1.0f)
+	{
+	}
+
 	RVec3 HitPosition;
 	RVec3 HitNormal;
 	float Distance;
+
+	// Color from texture
+	RVec3 SampledColor;
 };
 
 class RRay

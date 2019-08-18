@@ -7,6 +7,7 @@
 #include "MeshShape.h"
 #include "Math.h"
 #include "Platform.h"
+#include "Texture.h"
 
 #include <fstream>
 #include <string>
@@ -60,26 +61,30 @@ namespace
     }
 }
 
-RMeshShape::RMeshShape(const char* Filename)
+RMeshShape::RMeshShape(const string& Filename)
 {
-	ifstream InputFile(Filename);
+	string MeshFilename = Filename;
+	ifstream InputMeshFile(MeshFilename);
 	
-	if (!InputFile.is_open())
+	if (!InputMeshFile.is_open())
 	{
 		// If file is not found, search an alternative path for it.
-		char AlterPath[1024];
-		RPrintf(AlterPath, sizeof(AlterPath), "../%s", Filename);
-		InputFile = ifstream(AlterPath);
+		MeshFilename = std::string("../") + MeshFilename;
+		InputMeshFile = ifstream(MeshFilename.c_str());
 
-		if (!InputFile.is_open())
+		if (!InputMeshFile.is_open())
 		{
-			RLog("Error - RMeshShape: Unable to open %s!\n", Filename);
+			RLog("Error - RMeshShape: Unable to open %s!\n", Filename.c_str());
 			return;
 		}
 	}
 
+	vector<string> MaterialNameList;
+	int CurrentMaterialIdx = -1;
+
+	RLog("Loading mesh from file: %s\n", MeshFilename.c_str());
 	string Line;
-	while (getline(InputFile, Line))
+	while (getline(InputMeshFile, Line))
 	{
 		string key = GetLineKeyword(Line);
 		string dummy;
@@ -93,6 +98,14 @@ RMeshShape::RMeshShape(const char* Filename)
 			RVec3 Vertex(Pos);
 			Points.push_back(Vertex);
 			Aabb.Expand(Vertex);
+		}
+		else if (key == "vt")
+		{
+			stringstream LineStream(Line);
+			float t[3];
+			LineStream >> dummy >> t[0] >> t[1];
+			t[2] = 0.0f;
+			Texcoords.push_back(RVec3(t));
 		}
 		else if (key == "vn")
 		{
@@ -129,15 +142,40 @@ RMeshShape::RMeshShape(const char* Filename)
                     int PointIndex = GetNthNumericValue(0, Tokens[Index]) - 1;
                     PointIndices.push_back(PointIndex);
                     
+					int TexcoordIndex = GetNthNumericValue(1, Tokens[Index]) - 1;
+					TexcoordIndices.push_back(TexcoordIndex);
+
                     int NormalIndex = GetNthNumericValue(2, Tokens[Index]) - 1;
                     NormalIndices.push_back(NormalIndex);
+
+					if (i % 3 == 0)
+					{
+						// Store material id of each polygon
+						PolyMaterialId.push_back(CurrentMaterialIdx);
+					}
                 }
             }
 		}
+		else if (key == "usemtl")
+		{
+			auto Tokens = Split(Line, ' ');
+			string MaterialName = Tokens[1];
+
+			auto Iter = find(MaterialNameList.begin(), MaterialNameList.end(), MaterialName);
+			if (Iter == MaterialNameList.end())
+			{
+				MaterialNameList.push_back(MaterialName);
+				CurrentMaterialIdx = (int)MaterialNameList.size() - 1;
+			}
+			else
+			{
+				CurrentMaterialIdx = (int)(Iter - MaterialNameList.begin());
+			}
+		}
 	}
 
-	InputFile.close();
-	RLog("Mesh loaded from %s. Verts: %d, Triangles: %d\n", Filename, (int)Points.size(), (int)PointIndices.size() / 3);
+	InputMeshFile.close();
+	RLog("Mesh loaded from %s. Verts: %d, Triangles: %d\n", Filename.c_str(), (int)Points.size(), (int)PointIndices.size() / 3);
 
 	for (int i = 0; i < (int)PointIndices.size(); i += 3)
 	{
@@ -152,8 +190,75 @@ RMeshShape::RMeshShape(const char* Filename)
 		FaceNormals.push_back(Normal);
 	}
 
+	// Load materials from .mtl file
+	string MaterialFilename = MeshFilename;
+	auto Index = MaterialFilename.find(".obj");
+	if (Index != string::npos)
+	{
+		MaterialFilename.replace(Index, 4, ".mtl");
+
+		ifstream InputMaterialFile(MaterialFilename.c_str());
+		if (InputMaterialFile.is_open())
+		{
+			string BasePath;
+
+			auto Index = MaterialFilename.find_last_of("\\/");
+			if (Index != string::npos)
+			{
+				BasePath = MaterialFilename.substr(0, Index + 1);
+			}
+
+			Textures.resize(PolyMaterialId.size());
+			CurrentMaterialIdx = -1;
+
+			while (getline(InputMaterialFile, Line))
+			{
+				string key = GetLineKeyword(Line);
+				string Dummy;
+
+				if (key == "newmtl")
+				{
+					stringstream LineStream(Line);
+					string MaterialName;
+					LineStream >> Dummy >> MaterialName;
+					auto Iter = find(MaterialNameList.begin(), MaterialNameList.end(), MaterialName);
+					if (Iter == MaterialNameList.end())
+					{
+						CurrentMaterialIdx = -1;
+					}
+					else
+					{
+						CurrentMaterialIdx = (int)(Iter - MaterialNameList.begin());
+					}
+				}
+				else if (key == "map_Kd")
+				{
+					if (CurrentMaterialIdx == -1)
+					{
+						// This material is not used by the mesh
+						continue;
+					}
+
+					stringstream LineStream(Line);
+					string TexturePath;
+
+					LineStream >> Dummy >> TexturePath;
+
+					// Assuming texture path is relative
+					TexturePath = BasePath + TexturePath;
+
+					Textures[CurrentMaterialIdx] = std::move(RTexture::LoadTexturePNG(TexturePath));
+				}
+			}
+
+			InputMaterialFile.close();
+		}
+	}
+
+	RLog("Generating spatial information for the mesh... ");
 	Spatial = unique_ptr<KdTree>(new KdTree());
 	Spatial->Build(Points.data(), PointIndices.data(), (int)PointIndices.size());
+	RLog("Done\n");
 }
 
 bool RMeshShape::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult /*= nullptr*/) const
@@ -176,15 +281,31 @@ bool RMeshShape::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult 
 				const RVec3& b = Points[PointIndices[v1]];
 				const RVec3& c = Points[PointIndices[v2]];
 
+				float u, v, w;
+				RMath::Barycentric(p, a, b, c, u, v, w);
+
 				const RVec3& n0 = Normals[NormalIndices[v0]];
 				const RVec3& n1 = Normals[NormalIndices[v1]];
 				const RVec3& n2 = Normals[NormalIndices[v2]];
 
-				float u, v, w;
-				RMath::Barycentric(p, a, b, c, u, v, w);
-
                 // Use fast inverse square root for approximating normal direction
 				OutResult->HitNormal = (n0 * u + n1 * v + n2 * w).GetNormalizedVec3_Fast();
+
+				int MaterialId = PolyMaterialId[TriangleIndex];
+				if (MaterialId != -1 && MaterialId < (int)Textures.size())
+				{
+					RTexture* Texture = Textures[MaterialId].get();
+					if (Texture)
+					{
+						const RVec3& t0 = Texcoords[TexcoordIndices[v0]];
+						const RVec3& t1 = Texcoords[TexcoordIndices[v1]];
+						const RVec3& t2 = Texcoords[TexcoordIndices[v2]];
+
+						RVec3 texcoord = t0 * u + t1 * v + t2 * w;
+
+						OutResult->SampledColor = Texture->Sample(texcoord.x, 1.0f - texcoord.y);
+					}
+				}
 			}
 
 			return true;

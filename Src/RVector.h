@@ -99,6 +99,7 @@ public:
 	float x, y, z;
 
 	RVec3()
+		: x(0.0f), y(0.0f), z(0.0f)
 	{}
 
 	RVec3(float _x, float _y, float _z)

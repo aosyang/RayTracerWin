@@ -56,7 +56,7 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes, const Rend
 			// Base color render pass for previewing
 			if (SurfaceMaterial)
 			{
-				FinalColor += SurfaceMaterial->PreviewColor(Result);
+				FinalColor += SurfaceMaterial->PreviewColor(Result) * Result.SampledColor;
 			}
 		}
 		else
@@ -69,7 +69,7 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes, const Rend
 				// Early out further ray tracing if attenuation reaches zero
 				if (BounceResult.Attenuation.IsNonZero())
 				{
-					FinalColor += BounceResult.Attenuation * RayTrace(OutRay, MaxBounceTimes - 1, InOption);
+					FinalColor += BounceResult.Attenuation * RayTrace(OutRay, MaxBounceTimes - 1, InOption) * Result.SampledColor;
 				}
 
 				FinalColor += BounceResult.Emissive;

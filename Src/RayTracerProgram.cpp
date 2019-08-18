@@ -121,7 +121,7 @@ void DisplayThreadAndTime()
 
 void ThreadWorker_Render(int begin, int end, int MaxBounceCount, const RenderOption& InOption = RenderOption())
 {
-	const RVec3 ViewPoint(0, 0, -7);
+	const RVec3 ViewPoint(0, 0, 7.0f);
 	const RayTracerScene* Scene = RayTracerProgram::GetActiveInstance().GetScene();
 	const float Aspect = (float)bitmapWidth / (float)bitmapHeight;
 
@@ -152,7 +152,7 @@ void ThreadWorker_Render(int begin, int end, int MaxBounceCount, const RenderOpt
 			offset_x += (RMath::Random() - 0.5f) * offset_radius;
 			offset_y += (RMath::Random() - 0.5f) * offset_radius;
 
-			RVec3 Dir(dx + offset_x, dy + offset_y, 0.5f);
+			RVec3 Dir(dx + offset_x, dy + offset_y, -0.5f);
 			RRay ray(ViewPoint, Dir.GetNormalizedVec3(), 1000.0f);
 			c += Scene->RayTrace(ray, MaxBounceCount, InOption);
 		}
@@ -220,7 +220,7 @@ void ThreadTaskWorker()
 		}
 
 		// The max times ray can bounce between surfaces
-		static const int MaxBounceTimes = 4;
+		static const int MaxBounceTimes = 10;
 
 		RLogThread("Executing render task on thread [%s]...\n", ThreadName.c_str());
 		ThreadWorker_Render(Task.Start, Task.End, MaxBounceTimes, Task.Option);
@@ -368,7 +368,10 @@ RayTracerProgram::~RayTracerProgram()
 void RayTracerProgram::Run()
 {
 	srand((unsigned int)time(nullptr));
+
+	RLog("Initializing pseudo random numbers... ");
 	RMath::InitPseudoRandomUnitVector();
+	RLog("Done\n");
 
 	MainRenderWindow.Create(bitmapWidth, bitmapHeight);
 	MainRenderWindow.SetRenderBufferParameters(bitmapWidth, bitmapHeight, bitcolor);
@@ -392,25 +395,25 @@ void RayTracerProgram::ExecuteCleanup()
 
 void RayTracerProgram::SetupScene()
 {
-	Scene.AddShape(RSphere::Create(RVec3(0.0f, 2.3f, 2.0f), 0.9f),
+	Scene.AddShape(RSphere::Create(RVec3(0.0f, 2.3f, -2.0f), 0.9f),
 		MakeUnique<SurfaceMaterial_Blend>(
 			MakeUnique<SurfaceMaterial_Reflective>(),
 			MakeUnique<SurfaceMaterial_Diffuse>(RVec3(1.0f, 0.5f, 0.1f)),
 			0.5f)
 	);
 
-	Scene.AddShape(RSphere::Create(RVec3(-1.5f, 2.2f, 3.0f), 0.5f),
+	Scene.AddShape(RSphere::Create(RVec3(-1.5f, 2.2f, -3.0f), 0.5f),
 		MakeUnique<SurfaceMaterial_Diffuse>(RVec3(0.1f, 1.0f, 0.2f))
 	);
 
-	Scene.AddShape(RSphere::Create(RVec3(-0.2f, -1.8f, 1.0f), 0.5f),
+	Scene.AddShape(RSphere::Create(RVec3(-0.2f, -1.8f, -1.0f), 0.5f),
 		MakeUnique<SurfaceMaterial_Blend>(
 			MakeUnique<SurfaceMaterial_Reflective>(),
 			MakeUnique<SurfaceMaterial_Diffuse>(RVec3(0.5f, 0.0f, 0.2f)),
 			0.5f)
 	);
 
-	Scene.AddShape(RSphere::Create(RVec3(2.8f, -1.2f, 4.0f), 1.5f),
+	Scene.AddShape(RSphere::Create(RVec3(2.8f, -1.2f, -4.0f), 1.5f),
 		MakeUnique<SurfaceMaterial_Combine>(
 			MakeUnique<SurfaceMaterial_Blend>(
 				MakeUnique<SurfaceMaterial_Reflective>(RVec3(0.95f, 0.75f, 0.1f)),
@@ -420,10 +423,10 @@ void RayTracerProgram::SetupScene()
 		)
 	);
 
-	// Ceiling light
-	Scene.AddShape(RSphere::Create(RVec3(0.0f, 5.0f, 0.0f), 0.5f),
-		MakeUnique<SurfaceMaterial_Emissive>(RVec3(5.0f, 2.0f, 6.0f))
-	);
+	//// Ceiling light
+	//Scene.AddShape(RSphere::Create(RVec3(0.0f, 5.0f, 0.0f), 0.5f),
+	//	MakeUnique<SurfaceMaterial_Emissive>(RVec3(5.0f, 2.0f, 6.0f))
+	//);
 
 	Scene.AddShape(RCapsule::Create(RVec3(-1.5f, -0.5f, 0.0f), RVec3(-2.0f, -1.5f, 0.0f), 0.5f),
 		MakeUnique<SurfaceMaterial_Combine>(
@@ -438,44 +441,44 @@ void RayTracerProgram::SetupScene()
 	// Walls
 	{
 		// Ground
-		Scene.AddShape(RPlane::Create(RVec3(0.0f, 1.0f, 0.0f), RVec3(0.0f, -2.5f, 0.0f)),
+		Scene.AddShape(RPlane::Create(RVec3(0.0f, 1.0f, 0.0f), RVec3(0.0f, -2.0f, 0.0f)),
 			MakeUnique<SurfaceMaterial_Blend>(
-				MakeUnique<SurfaceMaterial_Reflective>(),
+				MakeUnique<SurfaceMaterial_Reflective>(RVec3(1, 1, 1), 0.1f),
 				MakeUnique<SurfaceMaterial_DiffuseChecker>(),
 				0.5f)
 		);
 
-		// Ceiling / Sky light plane
-		Scene.AddShape(RPlane::Create(RVec3(0.0f, -1.0f, 0.0f), RVec3(0.0f, 5.0f, 0.0f)),
-			MakeUnique<SurfaceMaterial_Diffuse>(RVec3(1.2f, 1.2f, 1.5f))
-		);
+		//// Ceiling / Sky light plane
+		//Scene.AddShape(RPlane::Create(RVec3(0.0f, -1.0f, 0.0f), RVec3(0.0f, 5.0f, 0.0f)),
+		//	MakeUnique<SurfaceMaterial_Diffuse>(RVec3(1.2f, 1.2f, 1.5f))
+		//);
 
-		// Back wall
-		Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, -1.0f), RVec3(0.0f, 0.0f, 5.0f)),
-			MakeUnique<SurfaceMaterial_DiffuseChecker>()
-		);
+		//// Back wall
+		//Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, 1.0f), RVec3(0.0f, 0.0f, -5.0f)),
+		//	MakeUnique<SurfaceMaterial_DiffuseChecker>()
+		//);
 
-		// Front wall (behind the camera)
-		Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, 1.0f), RVec3(0.0f, 0.0f, -10.0f)),
-			MakeUnique<SurfaceMaterial_DiffuseChecker>()
-		);
+		//// Front wall (behind the camera)
+		//Scene.AddShape(RPlane::Create(RVec3(0.0f, 0.0f, -1.0f), RVec3(0.0f, 0.0f, 10.0f)),
+		//	MakeUnique<SurfaceMaterial_DiffuseChecker>()
+		//);
 
-		// Right wall
-		Scene.AddShape(RPlane::Create(RVec3(1.0f, 0.0f, 0.0f), RVec3(-5.0f, 0.0f, 0.0f)),
-			MakeUnique<SurfaceMaterial_DiffuseChecker>()
-		);
+		//// Right wall
+		//Scene.AddShape(RPlane::Create(RVec3(1.0f, 0.0f, 0.0f), RVec3(-5.0f, 0.0f, 0.0f)),
+		//	MakeUnique<SurfaceMaterial_DiffuseChecker>()
+		//);
 
-		// Left wall
-		Scene.AddShape(RPlane::Create(RVec3(-1.0f, 0.0f, 0.0f), RVec3(5.0f, 0.0f, 0.0f)),
-			MakeUnique<SurfaceMaterial_DiffuseChecker>()
-		);
+		//// Left wall
+		//Scene.AddShape(RPlane::Create(RVec3(-1.0f, 0.0f, 0.0f), RVec3(5.0f, 0.0f, 0.0f)),
+		//	MakeUnique<SurfaceMaterial_DiffuseChecker>()
+		//);
 	}
 
 	// Meshes
-	Scene.AddShape(RMeshShape::Create("../Data/TorusKnot.obj"),
+	Scene.AddShape(RMeshShape::Create("../Data/unitychan.obj"),
 		MakeUnique<SurfaceMaterial_Blend>(
-			MakeUnique<SurfaceMaterial_Reflective>(),
-			MakeUnique<SurfaceMaterial_Diffuse>(RVec3(1.0f, 1.0f, 0.5f)),
-			0.5f)
+			MakeUnique<SurfaceMaterial_Reflective>(RVec3(1, 1, 1), 0.2f),
+			MakeUnique<SurfaceMaterial_Diffuse>(RVec3(1.0f, 1.0f, 1.0f)),
+			1.0f)
 	);
 }
