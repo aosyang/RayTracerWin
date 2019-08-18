@@ -164,5 +164,5 @@ std::unique_ptr<RTexture> RTexture::LoadTexturePNG(const std::string& Filename)
 		RLog("File could not be opened for reading: %s\n", Filename.c_str());
 	}
 
-	return std::move(Texture);
+	return Texture;
 }

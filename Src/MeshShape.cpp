@@ -246,8 +246,15 @@ RMeshShape::RMeshShape(const string& Filename)
 
 					// Assuming texture path is relative
 					TexturePath = BasePath + TexturePath;
+                    
+                    auto SlashIdx = TexturePath.find("\\\\");
+                    while (SlashIdx != string::npos)
+                    {
+                        TexturePath.replace(SlashIdx, 2, "/");
+                        SlashIdx = TexturePath.find("\\\\");
+                    }
 
-					Textures[CurrentMaterialIdx] = std::move(RTexture::LoadTexturePNG(TexturePath));
+					Textures[CurrentMaterialIdx] = RTexture::LoadTexturePNG(TexturePath);
 				}
 			}
 
