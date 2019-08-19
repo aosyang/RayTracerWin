@@ -78,6 +78,6 @@ namespace RMath
 				c.ToString().c_str());
 			DebugBreak();
 		}
-	}
 #endif	// DEBUG_CHECK_NAN
+	}
 }
