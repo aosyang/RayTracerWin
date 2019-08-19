@@ -10,6 +10,8 @@
 
 using namespace std;
 
+float BounceRayStartOffset = 0.0001f;
+
 SurfaceMaterial_Diffuse::SurfaceMaterial_Diffuse(const RVec3 InAlbedo /*= RVec3(1.0f, 1.0f, 1.0f)*/)
 	: Albedo(InAlbedo)
 {
@@ -22,7 +24,7 @@ ViewRayBounceResult SurfaceMaterial_Diffuse::BounceViewRay(const RRay& InViewRay
 
 	// Ray bounces off a surface in a random direction of a hemisphere
 	RVec3 DiffuseReflectionDirection = RMath::RandomHemisphereDirection(HitResult.HitNormal);
-	OutViewRay = RRay(HitResult.HitPosition + DiffuseReflectionDirection * 0.001f, DiffuseReflectionDirection, RayDistance);
+	OutViewRay = RRay(HitResult.HitPosition + DiffuseReflectionDirection * BounceRayStartOffset, DiffuseReflectionDirection, RayDistance);
 
 	// Lambertian reflectance
 	float DotProductResult = Math::Max(0.0f, RVec3::Dot(HitResult.HitNormal, DiffuseReflectionDirection));
@@ -112,7 +114,7 @@ ViewRayBounceResult SurfaceMaterial_Reflective::BounceViewRay(const RRay& InView
 		newDir.Normalize();
 	}
 
-	OutViewRay = RRay(HitResult.HitPosition + newDir * 0.001f, newDir, RayDistance);
+	OutViewRay = RRay(HitResult.HitPosition + newDir * BounceRayStartOffset, newDir, RayDistance);
 
 	return ViewRayBounceResult(Albedo);
 }
@@ -179,7 +181,7 @@ ViewRayBounceResult SurfaceMaterial_Null::BounceViewRay(const RRay& InViewRay, c
 	// The remaining distance ray will travel
 	float RayDistance = InViewRay.Distance - HitResult.Distance;
 
-	OutViewRay = RRay(HitResult.HitPosition + InViewRay.Direction * 0.001f, InViewRay.Direction, RayDistance);
+	OutViewRay = RRay(HitResult.HitPosition + InViewRay.Direction * BounceRayStartOffset, InViewRay.Direction, RayDistance);
 
 	return ViewRayBounceResult(RVec3(1, 1, 1));
 }

@@ -8,6 +8,7 @@
 
 #include "MathHelper.h"
 #include <math.h>
+#include <string>
 
 class RVec2;
 class RVec3;
@@ -143,6 +144,11 @@ public:
 		return !FLT_EQUAL_ZERO(x) && !FLT_EQUAL_ZERO(y) && !FLT_EQUAL_ZERO(z);
 	}
 
+	bool IsNan() const
+	{
+		return isnan(x) || isnan(y) || isnan(z);
+	}
+
 	float SquaredMagitude() const
 	{
 		return x*x + y*y + z*z;
@@ -191,6 +197,11 @@ public:
         }
         return *this;
     }
+
+	std::string ToString() const
+	{
+		return std::string("(") + std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(z) + ")";
+	}
 
 	// Dot product
 	static float Dot(const RVec3& a, const RVec3& b)

@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include "RVector.h"
 
+// Enable debug breakpoints for detecting nan values
+#define DEBUG_CHECK_NAN 0
+
 namespace RMath
 {
 	// [0, 1] random

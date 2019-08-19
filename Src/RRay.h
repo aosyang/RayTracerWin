@@ -15,6 +15,7 @@ struct RayHitResult
 	RayHitResult()
 		: Distance(0.0f)
 		, SampledColor(1.0f, 1.0f, 1.0f)
+		, SampledAlpha(1.0f)
 	{
 	}
 
@@ -24,6 +25,7 @@ struct RayHitResult
 
 	// Color from texture
 	RVec3 SampledColor;
+	float SampledAlpha;
 };
 
 class RRay

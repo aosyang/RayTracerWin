@@ -36,6 +36,11 @@ static_assert(sizeof(UINT32) == 4, "UINT32 must be 4 bytes");
 	// Print to output window
 	#define RLog(...)						{ char LogMsg[LogBufSize]; sprintf_s(LogMsg, __VA_ARGS__); OutputDebugStringA(LogMsg); }
 
+FORCEINLINE void DebugBreak()
+{
+	__debugbreak();
+}
+
 #else
 
 	// Print to char buffer
@@ -45,5 +50,12 @@ static_assert(sizeof(UINT32) == 4, "UINT32 must be 4 bytes");
 	#define RLog(...)						{ printf(__VA_ARGS__); }
 
     #define FORCEINLINE                     inline __attribute__ ((always_inline))
+
+#include <csignal>
+
+FORCEINLINE void DebugBreak()
+{
+	std::raise(SIGINT);
+}
 
 #endif

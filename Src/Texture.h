@@ -18,13 +18,13 @@ public:
 	RTexture();
 
 	/// Sample a color by texture coordinate
-	RVec3 Sample(float u, float v);
+	RVec4 Sample(float u, float v);
 
 	/// Load a texture from png
 	static std::unique_ptr<RTexture> LoadTexturePNG(const std::string& Filename);
 
 private:
-	std::vector<RVec3>	Pixels;
+	std::vector<RVec4>	Pixels;
 	int	Width;
 	int Height;
 };

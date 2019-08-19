@@ -310,7 +310,9 @@ bool RMeshShape::TestRayIntersection(const RRay& InRay, RayHitResult* OutResult 
 
 						RVec3 texcoord = t0 * u + t1 * v + t2 * w;
 
-						OutResult->SampledColor = Texture->Sample(texcoord.x, 1.0f - texcoord.y);
+						RVec4 SampledColor = Texture->Sample(texcoord.x, 1.0f - texcoord.y);
+						OutResult->SampledColor = SampledColor.ToVec3();
+						OutResult->SampledAlpha = SampledColor.w;
 					}
 				}
 			}

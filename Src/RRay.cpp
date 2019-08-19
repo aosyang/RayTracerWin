@@ -6,6 +6,7 @@
 
 #include "RRay.h"
 #include <assert.h>
+#include "Math.h"
 
 RRay::RRay()
 {
@@ -146,41 +147,49 @@ bool RRay::TestIntersectionWithTriangle(const RVec3 TriPoints[3], RayHitResult* 
 bool RRay::TestIntersectionWithTriangleAndFaceNormal(const RVec3 TriPoints[3], const RVec3& Normal, RayHitResult* result /*= nullptr*/) const
 {
 	RVec3 EndPoint = Origin + Direction * Distance;
-
 	const RVec3& Point = TriPoints[0];
-
-	if (RVec3::Dot(Origin, Normal) - RVec3::Dot(Point, Normal) < 0)
-	{
-		return false;
-	}
-
-	if (RVec3::Dot(EndPoint, Normal) - RVec3::Dot(Point, Normal) > 0)
-	{
-		return false;
-	}
-
-	if ((RVec3::Dot(Origin, Normal) - RVec3::Dot(Point, Normal) < 0) &&
-		(RVec3::Dot(EndPoint, Normal) - RVec3::Dot(Point, Normal) < 0))
-	{
-		return false;
-	}
-
-	if ((RVec3::Dot(Origin, Normal) - RVec3::Dot(Point, Normal) > 0) &&
-		(RVec3::Dot(EndPoint, Normal) - RVec3::Dot(Point, Normal) > 0))
-	{
-		return false;
-	}
 
 	float d0 = RVec3::Dot(Normal, Origin);
 	float d1 = RVec3::Dot(Normal, Point);
 	float d2 = d0 - d1;
 
+	if (d2 < 0)
+	{
+		return false;
+	}
+
+	if (RVec3::Dot(EndPoint, Normal) - d1 > 0)
+	{
+		return false;
+	}
+
 	RVec3 l = EndPoint - Origin;
 	float d3 = RVec3::Dot(Normal, l);
+
+	// Ray is coplanar with the triangle, no intersections
+	if (FLT_EQUAL_ZERO(d3))
+	{
+		return false;
+	}
 
 	float df = -(d2 / d3);
 
 	RVec3 cp = Origin + l * df;
+
+#if DEBUG_CHECK_NAN
+	if (cp.IsNan())
+	{
+		RLog("RRay::TestIntersectionWithTriangleAndFaceNormal() - Detected NaN in results:\n");
+		RLog("cp:%s, df:%f, d2:%f, d3: %f\n",
+			cp.ToString().c_str(), df, d2, d3);
+		RLog("p0:%s, p1:%s, p2:%s\n",
+			TriPoints[0].ToString().c_str(),
+			TriPoints[1].ToString().c_str(),
+			TriPoints[2].ToString().c_str());
+
+		DebugBreak();
+	}
+#endif	// DEBUG_CHECK_NAN
 
 	for (int i = 0; i < 3; i++)
 	{

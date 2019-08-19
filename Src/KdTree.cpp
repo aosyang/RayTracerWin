@@ -154,9 +154,24 @@ bool KdNode::TestRayIntersection(RRay& TestRay, const RVec3 Points[], RayHitResu
 			Points[Triangle.p1],
 			Points[Triangle.p2],
 		};
+
+#define DOUBLE_FACED 0
+
+#if DOUBLE_FACED
+		const RVec3 TriPoints_Flipped[] = {
+			Points[Triangle.p0],
+			Points[Triangle.p2],
+			Points[Triangle.p1],
+		};
+#endif
 		
 		RayHitResult HitResult;
-		if (TestRay.TestIntersectionWithTriangle(TriPoints, &HitResult))
+		if (TestRay.TestIntersectionWithTriangle(TriPoints, &HitResult)
+#if DOUBLE_FACED
+			// TODO: Checking against a single triangle twice is slow
+			|| TestRay.TestIntersectionWithTriangle(TriPoints_Flipped, &HitResult)
+#endif
+			)
 		{
 			TestRay.Distance = HitResult.Distance;
 				

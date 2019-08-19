@@ -11,6 +11,8 @@
 
 #include <memory>
 
+extern float BounceRayStartOffset;
+
 /// The result struct after a view ray bounces off a surface with materials
 struct ViewRayBounceResult
 {

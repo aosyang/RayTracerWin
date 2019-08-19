@@ -7,6 +7,7 @@
 #include "Texture.h"
 #include "Platform.h"
 #include "Math.h"
+#include <math.h>
 
 #include "png.h"
 
@@ -17,23 +18,39 @@ RTexture::RTexture()
 
 }
 
-RVec3 RTexture::Sample(float u, float v)
+RVec4 RTexture::Sample(float u, float v)
 {
-	u = RMath::Clamp(u, 0.0f, 1.0f);
-	v = RMath::Clamp(v, 0.0f, 1.0f);
+#if DEBUG_CHECK_NAN
+	if (isnan(u) || isnan(v))
+	{
+		RLog("Error: RTexture::Sample() - Detected NaN! (u = %f, v = %f)\n", u, v);
+		DebugBreak();
+	}
+#endif	// DEBUG_CHECK_NAN
 
-	float fx = u * (Width - 1);
-	float fy = v * (Height - 1);
+	// Clamp mode
+	//u = RMath::Clamp(u, 0.0f, 1.0f);
+	//v = RMath::Clamp(v, 0.0f, 1.0f);
+
+	// Repeat mode
+	float cu = u - floor(u);
+	float cv = v - floor(v);
+
+	float fx = cu * (Width - 1);
+	float fy = cv * (Height - 1);
 
 	int x0 = (int)floorf(fx);
 	int y0 = (int)floorf(fy);
 	int x1 = (int)ceilf(fx);
 	int y1 = (int)ceilf(fy);
 
-	return RVec3::Lerp(
-		RVec3::Lerp(Pixels[y0 * Width + x0], Pixels[y0 * Width + x1], fx - x0),
-		RVec3::Lerp(Pixels[y1 * Width + x0], Pixels[y1 * Width + x1], fx - x0),
-		fy - y0
+	float dx = fx - x0;
+	float dy = fy - y0;
+
+	return RVec4::Lerp(
+		RVec4::Lerp(Pixels[y0 * Width + x0], Pixels[y0 * Width + x1], dx),
+		RVec4::Lerp(Pixels[y1 * Width + x0], Pixels[y1 * Width + x1], dx),
+		dy
 	);
 }
 
@@ -107,7 +124,7 @@ std::unique_ptr<RTexture> RTexture::LoadTexturePNG(const std::string& Filename)
 											png_byte g = *(row_ptrs[y] + 3 * x + 1);
 											png_byte b = *(row_ptrs[y] + 3 * x + 2);
 
-											Texture->Pixels[y * width + x] = RVec3((float)r/255, (float)g/255, (float)b/255);
+											Texture->Pixels[y * width + x] = RVec4((float)r / 255, (float)g / 255, (float)b / 255, 1.0f);
 										}
 									}
 								}
@@ -122,7 +139,7 @@ std::unique_ptr<RTexture> RTexture::LoadTexturePNG(const std::string& Filename)
 											png_byte b = *(row_ptrs[y] + 4 * x + 2);
 											png_byte a = *(row_ptrs[y] + 4 * x + 3);
 
-											Texture->Pixels[y * width + x] = RVec3((float)r / 255, (float)g / 255, (float)b / 255);
+											Texture->Pixels[y * width + x] = RVec4((float)r / 255, (float)g / 255, (float)b / 255, (float)a / 255);
 										}
 									}
 								}

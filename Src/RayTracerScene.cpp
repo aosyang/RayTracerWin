@@ -66,13 +66,23 @@ RVec3 RayTracerScene::RayTrace(const RRay& InRay, int MaxBounceTimes, const Rend
 				RRay OutRay;
 				auto BounceResult = SurfaceMaterial->BounceViewRay(InRay, Result, OutRay);
 
-				// Early out further ray tracing if attenuation reaches zero
-				if (BounceResult.Attenuation.IsNonZero())
+				if (RMath::Random() <= Result.SampledAlpha)
 				{
-					FinalColor += BounceResult.Attenuation * RayTrace(OutRay, MaxBounceTimes - 1, InOption) * Result.SampledColor;
-				}
+					// Early out further ray tracing if attenuation reaches zero
+					if (BounceResult.Attenuation.IsNonZero())
+					{
+						FinalColor += BounceResult.Attenuation * RayTrace(OutRay, MaxBounceTimes - 1, InOption) * Result.SampledColor;
+					}
 
-				FinalColor += BounceResult.Emissive;
+					FinalColor += BounceResult.Emissive;
+				}
+				else
+				{
+					// Transparent, continue tracing the view ray in current direction
+					float RayDistance = InRay.Distance - Result.Distance;
+					OutRay = RRay(Result.HitPosition + InRay.Direction * BounceRayStartOffset, InRay.Direction, RayDistance);
+					FinalColor += RayTrace(OutRay, MaxBounceTimes - 1, InOption);
+				}
 			}
 		}
 	}
@@ -135,7 +145,7 @@ RVec3 RayTracerScene::CalculateLightColor(const LightData* InLight, const RayHit
 		break;
 	}
 
-	RRay ShadowRay(InHitResult.HitPosition + LightDirection * 0.001f, LightDirection, dist);
+	RRay ShadowRay(InHitResult.HitPosition + LightDirection * BounceRayStartOffset, LightDirection, dist);
 	bool IsInShadow = false;
 
 	// Check if light path has been blocked by any shapes

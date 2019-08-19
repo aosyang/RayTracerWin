@@ -7,8 +7,10 @@
 #include "Math.h"
 
 #include <fstream>
-#include <assert.h>
 #include <mutex>
+
+#include "Platform.h"
+
 
 namespace
 {
@@ -60,9 +62,22 @@ namespace RMath
 		float d20 = RVec3::Dot(v2, v0);
 		float d21 = RVec3::Dot(v2, v1);
 		float denom = d00 * d11 - d01 * d01;
+
 		v = (d11 * d20 - d01 * d21) / denom;
 		w = (d00 * d21 - d01 * d20) / denom;
 		u = 1.0f - v - w;
-	}
 
+#if DEBUG_CHECK_NAN
+		if (isnan(u) || isnan(v) || isnan(w))
+		{
+			RLog("Error: Barycentric() - one or more of output values is NaN! (u = %f, v = %f, w = %f)\n", u, v, w);
+			RLog("p:%s, a:%s, b:%s, c:%s\n",
+				p.ToString().c_str(),
+				a.ToString().c_str(),
+				b.ToString().c_str(),
+				c.ToString().c_str());
+			DebugBreak();
+		}
+	}
+#endif	// DEBUG_CHECK_NAN
 }
