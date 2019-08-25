@@ -13,6 +13,7 @@ IF(APPLE)
 	FIND_LIBRARY(APPKIT_LIBRARY AppKit)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
 	SET(EXTRA_LIBS ${APPKIT_LIBRARY})
+    set(CMAKE_MACOSX_RPATH 1)
 ENDIF()
 
 IF(WIN32)
@@ -51,8 +52,28 @@ ENDFUNCTION(ASSIGN_SOURCE_GROUP)
 
 ASSIGN_SOURCE_GROUP(${SOURCES} ${SOURCES_PLATFORM})
 
+function(get_all_targets _result _dir)
+    get_property(_subdirs DIRECTORY "${_dir}" PROPERTY SUBDIRECTORIES)
+    foreach(_subdir IN LISTS _subdirs)
+    get_all_targets(${_result} "${_subdir}")
+    endforeach()
+    get_property(_sub_targets DIRECTORY "${_dir}" PROPERTY BUILDSYSTEM_TARGETS)
+    set(${_result} ${${_result}} ${_sub_targets} PARENT_SCOPE)
+endfunction()
+
+function(add_subdirectory_with_folder _folder_name _folder)
+    add_subdirectory(${_folder} ${ARGN})
+    get_all_targets(_targets "${_folder}")
+    foreach(_target IN LISTS _targets)
+    set_target_properties(
+        ${_target}
+        PROPERTIES FOLDER "${_folder_name}"
+    )
+    endforeach()
+endfunction()
+
 # Add third party libraries
-add_subdirectory(ThirdParty/zlib)
+add_subdirectory_with_folder(ThirdParty/zlib ThirdParty/zlib)
 
 # Do not install libpng
 set(SKIP_INSTALL_ALL 1)
@@ -60,4 +81,4 @@ set(SKIP_INSTALL_ALL 1)
 set(ZLIB_INCLUDE_DIR "${CMAKE_BINARY_DIR}/ThirdParty/zlib" "${CMAKE_SOURCE_DIR}/ThirdParty/zlib")
 set(ZLIB_LIBRARY zlibstatic)
 
-add_subdirectory(ThirdParty/libpng)
+add_subdirectory_with_folder(ThirdParty/libpng ThirdParty/libpng)

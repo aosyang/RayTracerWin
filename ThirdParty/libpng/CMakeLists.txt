@@ -277,7 +277,6 @@ if(NOT AWK OR ANDROID)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/scripts/pnglibconf.h.prebuilt
                  ${CMAKE_CURRENT_BINARY_DIR}/pnglibconf.h)
   add_custom_target(genfiles) # Dummy
-  set_target_properties(genfiles PROPERTIES FOLDER ThirdParty)
 else()
   include(CMakeParseArguments)
   # Generate .chk from .out with awk
@@ -572,7 +571,6 @@ if(PNG_STATIC)
     # msvc does not append 'lib' - do it here to have consistent name
     set_target_properties(png_static PROPERTIES PREFIX "lib")
   endif()
-  set_target_properties(png_static PROPERTIES FOLDER ThirdParty)
   target_link_libraries(png_static ${ZLIB_LIBRARY} ${M_LIBRARY})
 endif()
 
