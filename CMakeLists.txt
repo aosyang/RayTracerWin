@@ -17,10 +17,13 @@ ENDIF()
 
 IF(WIN32)
     FILE(GLOB SOURCES_PLATFORM Src/Windows/*.cpp Src/Windows/*.h)
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /fp:fast" )
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /fp:fast")
 
 	# Multi-processor compilation support
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+
+	# Disable warnings on using c functions with char* parameters
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 ENDIF()
 
 ADD_EXECUTABLE(RayTracer WIN32 MACOSX_BUNDLE ${SOURCES} ${SOURCES_PLATFORM})
