@@ -22,6 +22,7 @@
 #include <vector>
 #include <chrono>
 #include <sstream>
+#include <fstream>
 
 template<typename T, typename ...Args>
 std::unique_ptr<T> MakeUnique(Args&&... args)
@@ -351,6 +352,8 @@ void UpdateBitmapPixels()
 		ActiveProgram.GetRenderWindow()->SetTitle(TextBuffer);
 	}
     
+    RLog("Finished rendering image.\n");
+    
     // Save result image to file
     {
         time_t rawtime;
@@ -361,12 +364,34 @@ void UpdateBitmapPixels()
         timeinfo = localtime(&rawtime);
         
         strftime(buffer,sizeof(buffer),"%Y-%m-%d_%H-%M-%S", timeinfo);
-        std::string Filename("Output_");
-        Filename += buffer;
-        Filename += ".png";
+        std::string Filename = std::string("Output_") + std::to_string(TotalSamplesNum) + "spp_" + buffer + ".png";
         
-        RTexture::SaveBufferToPNG(Filename.c_str(), bitcolor, bitmapWidth, bitmapHeight);
-        RLog("Image saved as %s\n", Filename.c_str());
+        // Find path to output images folder
+        std::string OutputPath("../SavedImages/");
+        std::ifstream fs(OutputPath + "Output.txt");
+        bool bFoundOutputFolder = true;
+        
+        if (!fs.is_open())
+        {
+            OutputPath = std::string("../") + OutputPath;
+            fs.open(OutputPath + "Output.txt");
+            if (!fs.is_open())
+            {
+                bFoundOutputFolder = false;
+            }
+        }
+        
+        if (fs.is_open())
+        {
+            fs.close();
+        }
+        
+        if (bFoundOutputFolder)
+        {
+            Filename = OutputPath + Filename;
+            RTexture::SaveBufferToPNG(Filename.c_str(), bitcolor, bitmapWidth, bitmapHeight);
+            RLog("Image saved as %s\n", Filename.c_str());
+        }
     }
 }
 

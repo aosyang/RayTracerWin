@@ -1,3 +1,5 @@
 Build/*
 !Build/Readme.txt
+SavedImages/*
+!SavedImages/Output.txt
 CMakeFiles
