@@ -7,6 +7,8 @@
 #include "Texture.h"
 #include "Platform.h"
 #include "Math.h"
+#include "ColorBuffer.h"
+
 #include <math.h>
 
 #include "png.h"
@@ -143,6 +145,14 @@ std::unique_ptr<RTexture> RTexture::LoadTexturePNG(const std::string& Filename)
 										}
 									}
 								}
+                                
+                                // Release memory
+                                for (int y = 0; y < height; y++)
+                                {
+                                    delete [] row_ptrs[y];
+                                }
+                                
+                                delete [] row_ptrs;
 							}
 							else
 							{
@@ -182,4 +192,88 @@ std::unique_ptr<RTexture> RTexture::LoadTexturePNG(const std::string& Filename)
 	}
 
 	return Texture;
+}
+
+bool RTexture::SaveBufferToPNG(const std::string& Filename, const UINT32* Pixels, int width, int height)
+{
+    int code = 0;
+    FILE* fp = nullptr;
+    png_structp png_ptr = nullptr;
+    png_infop info_ptr = nullptr;
+    png_bytep row = nullptr;
+    
+    fp = fopen(Filename.c_str(), "wb");
+    if (fp != nullptr)
+    {
+        png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+        if (png_ptr != nullptr)
+        {
+            info_ptr = png_create_info_struct(png_ptr);
+            if (info_ptr != nullptr)
+            {
+                if (!setjmp(png_jmpbuf(png_ptr)))
+                {
+                    png_init_io(png_ptr, fp);
+                    
+                    png_set_IHDR(png_ptr, info_ptr, width, height,
+                                 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
+                                 PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+                    
+                    png_write_info(png_ptr, info_ptr);
+                    
+                    // Allocate memory
+                    row = new png_byte[3 * width * sizeof(png_byte)];
+                    
+                    int x, y;
+                    for (y = 0; y < height; y++)
+                    {
+                        for (x = 0; x < width; x++)
+                        {
+                            UINT32 Color = Pixels[y * width + x];
+                            row[x * 3] = GetUint32ColorRed(Color);
+                            row[x * 3 + 1] = GetUint32ColorGreen(Color);
+                            row[x * 3 + 2] = GetUint32ColorBlue(Color);
+                        }
+                        png_write_row(png_ptr, row);
+                    }
+                    
+                    delete [] row;
+                }
+                else
+                {
+                    code = 1;
+                    RLog("Error during png creation.\n");
+                }
+            }
+            else
+            {
+                code = 1;
+                RLog("Could not allocate info struct.\n");
+            }
+        }
+        else
+        {
+            code = 1;
+            RLog("Could not allocate write struct.\n");
+        }
+        
+        fclose(fp);
+    }
+    else
+    {
+        code = 1;
+        RLog("Failed to save to %s: Unable to open file for writing.\n", Filename.c_str());
+    }
+    
+    if (info_ptr)
+    {
+        png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
+    }
+    
+    if (png_ptr)
+    {
+        png_destroy_write_struct(&png_ptr, (png_infopp)nullptr);
+    }
+    
+    return code == 0;
 }

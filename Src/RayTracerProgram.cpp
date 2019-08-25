@@ -350,6 +350,24 @@ void UpdateBitmapPixels()
 
 		ActiveProgram.GetRenderWindow()->SetTitle(TextBuffer);
 	}
+    
+    // Save result image to file
+    {
+        time_t rawtime;
+        struct tm * timeinfo;
+        char buffer[80];
+        
+        time (&rawtime);
+        timeinfo = localtime(&rawtime);
+        
+        strftime(buffer,sizeof(buffer),"%Y-%m-%d_%H-%M-%S", timeinfo);
+        std::string Filename("Output_");
+        Filename += buffer;
+        Filename += ".png";
+        
+        RTexture::SaveBufferToPNG(Filename.c_str(), bitcolor, bitmapWidth, bitmapHeight);
+        RLog("Image saved as %s\n", Filename.c_str());
+    }
 }
 
 RayTracerProgram::RayTracerProgram()

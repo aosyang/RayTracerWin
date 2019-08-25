@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "Platform.h"
 #include "RVector.h"
 
 #include <memory>
@@ -22,6 +23,8 @@ public:
 
 	/// Load a texture from png
 	static std::unique_ptr<RTexture> LoadTexturePNG(const std::string& Filename);
+    
+    static bool SaveBufferToPNG(const std::string& Filename, const UINT32* Pixels, int width, int height);
 
 private:
 	std::vector<RVec4>	Pixels;
