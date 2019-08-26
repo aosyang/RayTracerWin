@@ -1,6 +1,4 @@
 # Ray Tracer
-=========
-
 A simple ray tracer project.
 
 ## Supported platforms
@@ -12,5 +10,7 @@ A simple ray tracer project.
 - Supports PNG textures
 
 ## Screenshots
-![Screenshot](/screenshot0.png?raw=true "Screenshot")
-![Screenshot](/screenshot1.png?raw=true "Screenshot")
+<p float="left">
+  <img src="/screenshot0.png" width="400">
+  <img src="/screenshot1.png" width="400">
+</p>
