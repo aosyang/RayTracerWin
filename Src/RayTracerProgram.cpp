@@ -438,18 +438,18 @@ void RayTracerProgram::ExecuteCleanup()
 
 void RayTracerProgram::SetupScene()
 {
-	Scene.AddShape(RSphere::Create(RVec3(0.0f, 2.3f, -2.0f), 0.9f),
+	Scene.AddShape(RSphere::Create(RVec3(1.5f, 2.5f, -2.0f), 0.9f),
 		MakeUnique<SurfaceMaterial_Blend>(
 			MakeUnique<SurfaceMaterial_Reflective>(),
 			MakeUnique<SurfaceMaterial_Diffuse>(RVec3(1.0f, 0.5f, 0.1f)),
 			0.5f)
 	);
 
-	Scene.AddShape(RSphere::Create(RVec3(-1.5f, 2.2f, -3.0f), 0.5f),
+	Scene.AddShape(RSphere::Create(RVec3(-1.5f, -0.5f, -3.0f), 0.5f),
 		MakeUnique<SurfaceMaterial_Diffuse>(RVec3(0.1f, 1.0f, 0.2f))
 	);
 
-	Scene.AddShape(RSphere::Create(RVec3(-0.2f, -1.8f, -1.0f), 0.5f),
+	Scene.AddShape(RSphere::Create(RVec3(0.8f, -1.5f, -1.0f), 0.5f),
 		MakeUnique<SurfaceMaterial_Blend>(
 			MakeUnique<SurfaceMaterial_Reflective>(),
 			MakeUnique<SurfaceMaterial_Diffuse>(RVec3(0.5f, 0.0f, 0.2f)),
@@ -462,7 +462,7 @@ void RayTracerProgram::SetupScene()
 				MakeUnique<SurfaceMaterial_Reflective>(RVec3(0.95f, 0.75f, 0.1f)),
 				MakeUnique<SurfaceMaterial_Diffuse>(RVec3(0.95f, 0.75f, 0.1f)),
 				0.5f),
-			MakeUnique<SurfaceMaterial_Emissive>(RVec3(0.95f, 0.75f, 0.1f))
+			MakeUnique<SurfaceMaterial_Emissive>(RVec3(0.95f, 0.75f, 0.1f) * 0.5f)
 		)
 	);
 
@@ -471,14 +471,11 @@ void RayTracerProgram::SetupScene()
 	//	MakeUnique<SurfaceMaterial_Emissive>(RVec3(5.0f, 2.0f, 6.0f))
 	//);
 
-	Scene.AddShape(RCapsule::Create(RVec3(-1.5f, -0.5f, 0.0f), RVec3(-2.0f, -1.5f, 0.0f), 0.5f),
-		MakeUnique<SurfaceMaterial_Combine>(
-			MakeUnique<SurfaceMaterial_Blend>(
-				MakeUnique<SurfaceMaterial_Reflective>(RVec3(0.25f, 0.75f, 0.6f)),
-				MakeUnique<SurfaceMaterial_Diffuse>(RVec3(0.25f, 0.75f, 0.6f)),
-				0.5f),
-			MakeUnique<SurfaceMaterial_Emissive>(RVec3(0.25f, 0.75f, 0.6f))
-		)
+	Scene.AddShape(RCapsule::Create(RVec3(-1.5f, -1.5f, -1.5f), RVec3(-2.0f, -1.5f, 0.0f), 0.5f),
+        MakeUnique<SurfaceMaterial_Blend>(
+            MakeUnique<SurfaceMaterial_Reflective>(RVec3(0.8f, 0.75f, 0.6f), 0.2f),
+            MakeUnique<SurfaceMaterial_Diffuse>(RVec3(0.25f, 0.75f, 0.6f)),
+            0.2f)
 	);
 
 	// Walls
