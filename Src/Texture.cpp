@@ -126,7 +126,9 @@ std::unique_ptr<RTexture> RTexture::LoadTexturePNG(const std::string& Filename)
 											png_byte g = *(row_ptrs[y] + 3 * x + 1);
 											png_byte b = *(row_ptrs[y] + 3 * x + 2);
 
-											Texture->Pixels[y * width + x] = RVec4((float)r / 255, (float)g / 255, (float)b / 255, 1.0f);
+											RVec3 Color((float)r / 255, (float)g / 255, (float)b / 255);
+											RVec3 LinearColor = GammaToLinear(Color);
+											Texture->Pixels[y * width + x] = RVec4(LinearColor, 1.0f);
 										}
 									}
 								}
@@ -141,7 +143,9 @@ std::unique_ptr<RTexture> RTexture::LoadTexturePNG(const std::string& Filename)
 											png_byte b = *(row_ptrs[y] + 4 * x + 2);
 											png_byte a = *(row_ptrs[y] + 4 * x + 3);
 
-											Texture->Pixels[y * width + x] = RVec4((float)r / 255, (float)g / 255, (float)b / 255, (float)a / 255);
+											RVec3 Color((float)r / 255, (float)g / 255, (float)b / 255);
+											RVec3 LinearColor = GammaToLinear(Color);
+											Texture->Pixels[y * width + x] = RVec4(LinearColor, (float)a / 255);
 										}
 									}
 								}

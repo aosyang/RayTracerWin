@@ -67,6 +67,16 @@ FORCEINLINE BYTE GetUint32ColorBlue(UINT32 Color)
 #endif
 }
 
+FORCEINLINE RVec3 GammaToLinear(const RVec3& color)
+{
+	static const float exponent = 2.2f;
+	return RVec3(
+		powf(color.x, exponent),
+		powf(color.y, exponent),
+		powf(color.z, exponent)
+	);
+}
+
 // Convert linear color to gamma space color
 FORCEINLINE RVec3 LinearToGamma(const RVec3& color)
 {
