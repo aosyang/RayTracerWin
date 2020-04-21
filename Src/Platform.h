@@ -7,21 +7,31 @@
 #pragma once
 
 #if __APPLE__
-
 #define PLATFORM_OSX 1
-typedef unsigned int UINT32;
-
-static_assert(sizeof(UINT32) == 4, "UINT32 must be 4 bytes");
-
 #define ARRAYSIZE(x) (sizeof(x)/sizeof(x[0]))
-
 #elif _WIN32
-
 #define PLATFORM_WIN32 1
-
 #include <windows.h>
-
+#else
+#define PLATFORM_LINUX 1
 #endif
+
+#ifndef PLATFORM_OSX
+#define PLATFORM_OSX 0
+#endif
+
+#ifndef PLATFORM_WIN32
+#define PLATFORM_WIN32 0
+#endif
+
+#ifndef PLATFORM_LINUX
+#define PLATFORM_LINUX 0
+#endif
+
+#ifndef UINT32
+typedef unsigned int UINT32;
+static_assert(sizeof(UINT32) == 4, "UINT32 must be 4 bytes");
+#endif	// ifndef UINT32
 
 
 #define LogBufSize 16384

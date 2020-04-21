@@ -36,7 +36,7 @@ RayTracerProgram* RayTracerProgram::CurrentInstance = nullptr;
 #define ENABLE_ANTIALIASING 1
 
 // Number of times each pixel is sampled
-static const int TotalSamplesNum = 500;
+static const int TotalSamplesNum = 10;
 
 Pixel bitcolor[bitmapWidth * bitmapHeight];
 
@@ -515,10 +515,10 @@ void RayTracerProgram::SetupScene()
 	}
 
 	// Meshes
-	Scene.AddShape(RMeshShape::Create("../Data/unitychan.obj"),
-		MakeUnique<SurfaceMaterial_Blend>(
-			MakeUnique<SurfaceMaterial_Reflective>(RVec3(1, 1, 1), 0.2f),
-			MakeUnique<SurfaceMaterial_Diffuse>(RVec3(1.0f, 1.0f, 1.0f)),
-			1.0f)
-	);
+	// Scene.AddShape(RMeshShape::Create("../Data/unitychan.obj"),
+	// 	MakeUnique<SurfaceMaterial_Blend>(
+	// 		MakeUnique<SurfaceMaterial_Reflective>(RVec3(1, 1, 1), 0.2f),
+	// 		MakeUnique<SurfaceMaterial_Diffuse>(RVec3(1.0f, 1.0f, 1.0f)),
+	// 		1.0f)
+	// );
 }

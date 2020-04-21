@@ -12,6 +12,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <algorithm>
 
 using namespace std;
 
@@ -221,7 +222,7 @@ RMeshShape::RMeshShape(const string& Filename)
 					stringstream LineStream(Line);
 					string MaterialName;
 					LineStream >> Dummy >> MaterialName;
-					auto Iter = find(MaterialNameList.begin(), MaterialNameList.end(), MaterialName);
+					auto Iter = std::find(MaterialNameList.begin(), MaterialNameList.end(), MaterialName);
 					if (Iter == MaterialNameList.end())
 					{
 						CurrentMaterialIdx = -1;

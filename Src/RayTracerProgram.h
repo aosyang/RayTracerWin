@@ -12,6 +12,8 @@
 #include "OSX/OSXWindow.h"
 #elif (PLATFORM_WIN32)
 #include "Windows/RenderWindow.h"
+#elif (PLATFORM_LINUX)
+#include "Linux/RenderWindow_X11.h"
 #endif
 
 #include "RayTracerScene.h"

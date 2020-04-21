@@ -4,6 +4,7 @@ SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 
 SET(CMAKE_CONFIGURATION_TYPES "Debug;Release")
 SET(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_CXX_EXTENSIONS OFF)
 
 PROJECT(RayTracer)
 FILE(GLOB SOURCES Src/*.cpp Src/*.h)
@@ -14,9 +15,7 @@ IF(APPLE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffast-math")
 	SET(EXTRA_LIBS ${APPKIT_LIBRARY})
     set(CMAKE_MACOSX_RPATH 1)
-ENDIF()
-
-IF(WIN32)
+ELSEIF(WIN32)
     FILE(GLOB SOURCES_PLATFORM Src/Windows/*.cpp Src/Windows/*.h)
 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /fp:fast")
 
@@ -25,6 +24,8 @@ IF(WIN32)
 
 	# Disable warnings on using c functions with char* parameters
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+ELSE()
+    FILE(GLOB SOURCES_PLATFORM Src/Linux/*.cpp Src/Linux/*.h)
 ENDIF()
 
 ADD_EXECUTABLE(RayTracer WIN32 MACOSX_BUNDLE ${SOURCES} ${SOURCES_PLATFORM})
@@ -32,6 +33,10 @@ TARGET_LINK_LIBRARIES(RayTracer ${EXTRA_LIBS})
 add_dependencies(RayTracer png_static)
 target_include_directories(RayTracer PRIVATE ${CMAKE_SOURCE_DIR}/ThirdParty/libpng ${CMAKE_BINARY_DIR}/ThirdParty/libpng)
 target_link_libraries(RayTracer png_static)
+
+IF(NOT(APPLE) AND NOT(WIN32))
+    TARGET_LINK_LIBRARIES(RayTracer pthread X11)
+ENDIF()
 
 IF(APPLE)
     SET_TARGET_PROPERTIES(RayTracer PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/Src/OSX/MacOSXBundleInfo.plist)
