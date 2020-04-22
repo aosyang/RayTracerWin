@@ -24,6 +24,14 @@
 #include <sstream>
 #include <fstream>
 
+#if PLATFORM_WIN32
+#include <direct.h>
+#define GetCurrentDir _getcwd
+#else
+#include <unistd.h>
+#define GetCurrentDir getcwd
+#endif
+
 template<typename T, typename ...Args>
 std::unique_ptr<T> MakeUnique(Args&&... args)
 {
@@ -365,21 +373,35 @@ void UpdateBitmapPixels()
         
         strftime(buffer,sizeof(buffer),"%Y-%m-%d_%H-%M-%S", timeinfo);
         std::string Filename = std::string("Output_") + std::to_string(TotalSamplesNum) + "spp_" + buffer + ".png";
-        
+
+		char CurrentDir[FILENAME_MAX];
+		GetCurrentDir(CurrentDir, FILENAME_MAX);
+		RLog("Current working directory: %s\n", CurrentDir);
+
+        bool bFoundOutputFolder = false;
+
         // Find path to output images folder
-        std::string OutputPath("../SavedImages/");
+        std::string OutputPath("SavedImages/");
         std::ifstream fs(OutputPath + "Output.txt");
-        bool bFoundOutputFolder = true;
-        
-        if (!fs.is_open())
-        {
-            OutputPath = std::string("../") + OutputPath;
-            fs.open(OutputPath + "Output.txt");
-            if (!fs.is_open())
-            {
-                bFoundOutputFolder = false;
-            }
-        }
+
+		if (fs.is_open())
+		{
+			bFoundOutputFolder = true;
+		}
+        else
+		{
+			for (int i = 0; i < 2; i++)
+			{
+				OutputPath = std::string("../") + OutputPath;
+				fs.open(OutputPath + "Output.txt");
+
+				if (fs.is_open())
+				{
+					bFoundOutputFolder = true;
+					break;
+				}
+			}
+		}
         
         if (fs.is_open())
         {
@@ -392,6 +414,10 @@ void UpdateBitmapPixels()
             RTexture::SaveBufferToPNG(Filename.c_str(), bitcolor, bitmapWidth, bitmapHeight);
             RLog("Image saved as %s\n", Filename.c_str());
         }
+		else
+		{
+			RLog("Unable to find the output folder SavedImages!\n");
+		}
     }
 }
 
