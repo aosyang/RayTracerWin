@@ -184,8 +184,6 @@ void RenderWindow::RunWindowLoop(RayTracerProgram* Program)
 		Sleep(10);
 		PresentRenderBuffer();
 	}
-
-	Program->ExecuteCleanup();
 }
 
 LPCTSTR RenderWindow::GetTitle() const
