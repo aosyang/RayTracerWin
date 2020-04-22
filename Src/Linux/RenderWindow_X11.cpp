@@ -44,12 +44,17 @@ bool RenderWindow::Create(int width, int height, bool fullscreen, int bpp)
 
     XMapWindow(Context->display, Context->window);
 
+    // Handle window close event
+    Atom wmDelete=XInternAtom(Context->display, "WM_DELETE_WINDOW", True);
+    XSetWMProtocols(Context->display, Context->window, &wmDelete, 1);
+
     return true;
 }
 
 void RenderWindow::Destroy()
 {
-
+    XDestroyWindow(Context->display, Context->window);
+    XCloseDisplay(Context->display);
 }
 
 void RenderWindow::SetRenderBufferParameters(int BufferWidth, int BufferHeight, void* BufferData)
@@ -75,7 +80,7 @@ void RenderWindow::RunWindowLoop(RayTracerProgram* Program)
             
             switch (event.type)
             {
-                case DestroyNotify:
+                case ClientMessage:
                     bQuit = true;
                     break;
             }

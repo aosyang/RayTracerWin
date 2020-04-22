@@ -69,15 +69,23 @@ RMeshShape::RMeshShape(const string& Filename)
 	
 	if (!InputMeshFile.is_open())
 	{
-		// If file is not found, search an alternative path for it.
-		MeshFilename = std::string("../") + MeshFilename;
-		InputMeshFile = ifstream(MeshFilename.c_str());
-
-		if (!InputMeshFile.is_open())
+		for (int i = 0; i < 2; i++)
 		{
-			RLog("Error - RMeshShape: Unable to open %s!\n", Filename.c_str());
-			return;
+			// If file is not found, search an alternative path for it.
+			MeshFilename = std::string("../") + MeshFilename;
+			InputMeshFile = ifstream(MeshFilename.c_str());
+
+			if (InputMeshFile.is_open())
+			{
+				break;
+			}
 		}
+	}
+
+	if (!InputMeshFile.is_open())
+	{
+		RLog("Error - RMeshShape: Unable to open %s!\n", Filename.c_str());
+		return;
 	}
 
 	vector<string> MaterialNameList;

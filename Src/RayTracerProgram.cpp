@@ -451,6 +451,8 @@ void RayTracerProgram::Run()
 	RayTracerMainThread = std::thread(UpdateBitmapPixels);
 
 	MainRenderWindow.RunWindowLoop(this);
+
+	ExecuteCleanup();
 }
 
 void RayTracerProgram::ExecuteCleanup()
@@ -541,7 +543,7 @@ void RayTracerProgram::SetupScene()
 	}
 
 	// Meshes
-	Scene.AddShape(RMeshShape::Create("../Data/unitychan.obj"),
+	Scene.AddShape(RMeshShape::Create("Data/unitychan.obj"),
 		MakeUnique<SurfaceMaterial_Blend>(
 			MakeUnique<SurfaceMaterial_Reflective>(RVec3(1, 1, 1), 0.2f),
 			MakeUnique<SurfaceMaterial_Diffuse>(RVec3(1.0f, 1.0f, 1.0f)),
