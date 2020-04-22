@@ -23,6 +23,8 @@ public:
 
     void SetTitle(const char* Title);
 private:
+	void PresentRenderBuffer();
+
 	struct X11WindowContext;
 	X11WindowContext* Context;
 };

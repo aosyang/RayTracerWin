@@ -9,16 +9,26 @@
 #include <X11/Xlib.h>
 #include <assert.h>
 #include <iostream>
+#include <unistd.h>
 
 struct RenderWindow::X11WindowContext
 {
     X11WindowContext()
      : display(nullptr)
+     , Width(-1)
+     , Height(-1)
+     , Pixels(nullptr)
     {
     }
 
     Display* display;
     Window window;
+    GC gc;
+
+    int Width, Height;
+    char* Pixels;
+
+    Pixmap pixmap;
 };
 
 RenderWindow::RenderWindow()
@@ -42,6 +52,8 @@ bool RenderWindow::Create(int width, int height, bool fullscreen, int bpp)
     Context->window = XCreateSimpleWindow(Context->display, DefaultRootWindow(Context->display),
         0, 0, width, height, 0, BlackColor, BlackColor);
 
+    Context->gc = XCreateGC(Context->display, Context->window, 0, 0);
+
     XMapWindow(Context->display, Context->window);
 
     // Handle window close event
@@ -54,12 +66,15 @@ bool RenderWindow::Create(int width, int height, bool fullscreen, int bpp)
 void RenderWindow::Destroy()
 {
     XDestroyWindow(Context->display, Context->window);
+    XFreeGC(Context->display, Context->gc);
     XCloseDisplay(Context->display);
 }
 
 void RenderWindow::SetRenderBufferParameters(int BufferWidth, int BufferHeight, void* BufferData)
 {
-
+    Context->Width = BufferWidth;
+    Context->Height = BufferHeight;
+    Context->Pixels = (char*)BufferData;
 }
 
 void RenderWindow::RunWindowLoop(RayTracerProgram* Program)
@@ -85,10 +100,37 @@ void RenderWindow::RunWindowLoop(RayTracerProgram* Program)
                     break;
             }
         }
+
+        //PresentRenderBuffer();
     }
 }
 
 void RenderWindow::SetTitle(const char* Title)
 {
     XStoreName(Context->display, Context->window, Title);
+}
+
+void RenderWindow::PresentRenderBuffer()
+{
+    Context->pixmap = XCreatePixmapFromBitmapData(
+        Context->display, Context->window,
+        Context->Pixels, Context->Width, Context->Height,
+        0, 0, 1);
+
+    if (Context->pixmap == 0)
+    {
+        std::cout << "XCreatePixmapFromBitmapData encounted an error" << std::endl;
+    }
+
+    int RetCode = XCopyArea(
+        Context->display, Context->pixmap, Context->window, Context->gc,
+        0, 0, Context->Width, Context->Height,
+        0, 0);
+
+    if (RetCode != Success)
+    {
+        std::cout << "XCopyArea encounted an error with code " << RetCode << std::endl;
+    }
+
+    usleep(50);
 }
